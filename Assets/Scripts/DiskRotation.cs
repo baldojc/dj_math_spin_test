@@ -3,8 +3,8 @@ using UnityEngine;
 public class DiskRotation : MonoBehaviour
 {
     public GameManager gameManager;
-    public bool isLeftDisk = true;  
-    private float rotationSpeed = 0.2f;
+    public bool isLeftDisk = true;
+    private float rotationSpeed = 0.5f; // Increased rotation speed
     private float currentRotation = 0f;
     private int[] numbers;
     private bool isDragging = false;
@@ -24,29 +24,35 @@ public class DiskRotation : MonoBehaviour
         if (Input.touchCount > 0)
         {
             Touch touch = Input.GetTouch(0);
-            RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(touch.position), Vector2.zero);
+            Vector2 touchPosition = Camera.main.ScreenToWorldPoint(touch.position);
+
+            Debug.Log("Touch at: " + touchPosition); // Debug touch position
+
+            RaycastHit2D hit = Physics2D.Raycast(touchPosition, Vector2.zero);
 
             if (hit.collider != null && hit.collider.gameObject == gameObject)
             {
+                Debug.Log("Hit object: " + hit.collider.gameObject.name);
+
                 if (touch.phase == TouchPhase.Began)
+                {
                     isDragging = true;
+                }
 
                 if (isDragging && touch.phase == TouchPhase.Moved)
                 {
                     float rotationInput = touch.deltaPosition.x * rotationSpeed;
-                    currentRotation += rotationInput;
-                    currentRotation = Mathf.Repeat(currentRotation, 360f);
-                    transform.rotation = Quaternion.Euler(0, 0, currentRotation);
-
-                    int selectedIndex = Mathf.RoundToInt(currentRotation / 180f) % 2;
-                    if (isLeftDisk)
-                        gameManager.UpdateLeftNumber(numbers[selectedIndex]);
-                    else
-                        gameManager.UpdateRightNumber(numbers[selectedIndex]);
+                    transform.Rotate(0, 0, -rotationInput); // Apply rotation
                 }
 
                 if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                {
                     isDragging = false;
+                }
+            }
+            else
+            {
+                Debug.Log("No object hit");
             }
         }
     }
