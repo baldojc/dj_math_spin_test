@@ -3,7 +3,7 @@ using UnityEngine;
 public class DiskRotation : MonoBehaviour
 {
     public GameManager gameManager;
-    public bool isLeftDisk = true;  // Set in Inspector
+    public bool isLeftDisk = true;  
     private float rotationSpeed = 0.2f;
     private float currentRotation = 0f;
     private int[] numbers;
@@ -11,7 +11,6 @@ public class DiskRotation : MonoBehaviour
 
     void Start()
     {
-        // Assign numbers based on whether this is the left or right disk
         numbers = isLeftDisk ? new int[] { 3, 4 } : new int[] { 1, 2 };
     }
 
