@@ -14,7 +14,7 @@ public class DiskRotation : MonoBehaviour
     void Start()
     {
         // Use updated numbers
-        numbers = isLeftDisk ? new int[] { 3, 2, 8, 9, 7,4 } : new int[] { 1, 2 };
+        numbers = isLeftDisk ? new int[] { 3, 2, 8, 9, 7,4 } : new int[] { 1, 6,5,2,3,9 };
     }
 
     void Update()
