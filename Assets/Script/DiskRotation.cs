@@ -3,7 +3,7 @@ using UnityEngine;
 public class DiskRotation : MonoBehaviour
 {
     public GameManager gameManager;
-    public bool isLeftDisk = true;  // Set in Inspector
+    public bool isLeftDisk = true;  
 
     private float currentRotation = 0f;
     private int[] numbers;
@@ -13,7 +13,7 @@ public class DiskRotation : MonoBehaviour
 
     void Start()
     {
-        // Use updated numbers
+     
         numbers = isLeftDisk ? new int[] { 3, 2, 8, 9, 7,4 } : new int[] { 1, 6,5,2,3,9 };
     }
 
@@ -75,7 +75,7 @@ public class DiskRotation : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, 0, currentRotation);
 
         int selectedIndex = Mathf.RoundToInt((360f - currentRotation) / (360f / numbers.Length)) % numbers.Length;
-        selectedIndex = (selectedIndex + numbers.Length) % numbers.Length; // Ensure no negative index
+        selectedIndex = (selectedIndex + numbers.Length) % numbers.Length; 
 
         if (isLeftDisk)
             gameManager.UpdateLeftNumber(numbers[selectedIndex]);
