@@ -1271,7 +1271,7 @@ GameObject:
   - component: {fileID: 733604044}
   - component: {fileID: 733604043}
   m_Layer: 0
-  m_Name: Operator
+  m_Name: OperatorImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1293,8 +1293,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 50, y: -154}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchoredPosition: {x: 45, y: -178}
+  m_SizeDelta: {x: 190, y: 190}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &733604043
 MonoBehaviour:
@@ -2113,9 +2113,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetNumberText: {fileID: 64426659}
   selectedNumberText: {fileID: 2132903745}
-  operatorText: {fileID: 0}
   scoreText: {fileID: 522309520}
   checkAnswerButton: {fileID: 1057141665}
+  operatorImage: {fileID: 733604043}
+  plusSprite: {fileID: -855298285791758126, guid: e021879cb79eae748a2fb4e6683c492a, type: 3}
+  minusSprite: {fileID: -4178046375966092550, guid: d305db91bd8b3544397cbb7333c2f0f7, type: 3}
+  multiplySprite: {fileID: -6470460504253458178, guid: 78e51a97638ed6d48a79eb885e1c79e2, type: 3}
+  divideSprite: {fileID: 6937817954938267909, guid: e1052789c41a06f4999f2497bd87b71f, type: 3}
 --- !u!1 &1189463207
 GameObject:
   m_ObjectHideFlags: 0

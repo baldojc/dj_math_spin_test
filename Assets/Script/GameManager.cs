@@ -1,14 +1,24 @@
 using UnityEngine;
-using TMPro;
 using UnityEngine.UI;
+using TMPro;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
     public TextMeshProUGUI targetNumberText;
     public TextMeshProUGUI selectedNumberText;
-    public TextMeshProUGUI operatorText;
     public TextMeshProUGUI scoreText;
     public Button checkAnswerButton;
+
+    public Image operatorImage;
+
+    // Assign these in the Inspector
+    public Sprite plusSprite;
+    public Sprite minusSprite;
+    public Sprite multiplySprite;
+    public Sprite divideSprite;
+
+    private Dictionary<string, Sprite> operatorSprites;
 
     private int targetNumber;
     private int score = 0;
@@ -19,8 +29,18 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        GenerateTargetNumber();
         checkAnswerButton.onClick.AddListener(CheckAnswer);
+
+        // Initialize operatorSprites dictionary using manually assigned sprites
+        operatorSprites = new Dictionary<string, Sprite>()
+        {
+            { "+", plusSprite },
+            { "-", minusSprite },
+            { "*", multiplySprite },
+            { "/", divideSprite }
+        };
+
+        GenerateTargetNumber();
     }
 
     void GenerateTargetNumber()
@@ -30,7 +50,11 @@ public class GameManager : MonoBehaviour
 
         string[] operators = { "+", "-", "*", "/" };
         currentOperator = operators[Random.Range(0, operators.Length)];
-        operatorText.text = currentOperator;
+
+        if (operatorSprites.TryGetValue(currentOperator, out Sprite opSprite))
+        {
+            operatorImage.sprite = opSprite;
+        }
     }
 
     public void UpdateLeftNumber(int number)
