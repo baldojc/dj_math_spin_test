@@ -1,31 +1,27 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
-using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
     public TextMeshProUGUI targetNumberText;
-    public TextMeshProUGUI selectedNumberText;
     public TextMeshProUGUI scoreText;
-    public Button checkAnswerButton;
-    public Image operatorImage;
+    public TextMeshProUGUI selectedNumbersText;
 
-    public Sprite plusSprite;
-    public Sprite minusSprite;
-    public Sprite multiplySprite;
-    public Sprite divideSprite;
+    public int targetNumber;
+    public int score = 0;
 
-    private Dictionary<string, Sprite> operatorSprites;
+    public int LeftSelectedNumber;
+    public int RightSelectedNumber;
+    public string currentOperator = "+";
 
-    private int targetNumber;
-    private int score = 0;
-    private string currentOperator;
+    public enum Difficulty { Easy, Medium, Hard }
+    public Difficulty currentDifficulty = Difficulty.Easy;
 
-    public int LeftSelectedNumber { get; private set; } = 3;
-    public int RightSelectedNumber { get; private set; } = 1;
+    public AudioSource correctSound;
+    public AudioSource incorrectSound;
 
     private void Awake()
     {
@@ -38,94 +34,100 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void Start()
+    private void Start()
     {
-        checkAnswerButton.onClick.AddListener(CheckAnswer);
+        score = 0;
+        UpdateScoreUI();
+    }
 
-        operatorSprites = new Dictionary<string, Sprite>()
-        {
-            { "+", plusSprite },
-            { "-", minusSprite },
-            { "*", multiplySprite },
-            { "/", divideSprite }
-        };
+    #region Game Flow
 
+    public void SetDifficulty(Difficulty difficulty)
+    {
+        currentDifficulty = difficulty;
+        score = 0;
+        UpdateScoreUI();
         GenerateTargetNumber();
     }
 
     public void GenerateTargetNumber()
     {
-        targetNumber = Random.Range(2, 20);
-        targetNumberText.text = "Target: " + targetNumber.ToString();
-
-        string[] operators = { "+", "-", "*", "/" };
-        currentOperator = operators[Random.Range(0, operators.Length)];
-
-        if (operatorSprites.TryGetValue(currentOperator, out Sprite opSprite))
+        switch (currentDifficulty)
         {
-            operatorImage.sprite = opSprite;
+            case Difficulty.Easy:
+                targetNumber = Random.Range(5, 21); // Simple numbers
+                break;
+            case Difficulty.Medium:
+                targetNumber = Random.Range(10, 51);
+                break;
+            case Difficulty.Hard:
+                targetNumber = Random.Range(20, 100);
+                break;
         }
 
-        UpdateUI();
+        targetNumberText.text = "Target: " + targetNumber;
     }
+
 
     public void UpdateLeftNumber(int number)
     {
         LeftSelectedNumber = number;
-        UpdateUI();
+        UpdateSelectedNumbersUI();
     }
 
     public void UpdateRightNumber(int number)
     {
         RightSelectedNumber = number;
-        UpdateUI();
+        UpdateSelectedNumbersUI();
     }
 
-    void UpdateUI()
+    private void UpdateSelectedNumbersUI()
     {
-        selectedNumberText.text = $"Left: {LeftSelectedNumber}, Right: {RightSelectedNumber}";
+        if (selectedNumbersText != null)
+        {
+            selectedNumbersText.text = $"{LeftSelectedNumber} {currentOperator} {RightSelectedNumber}";
+        }
     }
 
-    void CheckAnswer()
+    public void CheckAnswer()
     {
-        float result = 0f;
-        bool valid = true;
+        int result = 0;
+        bool isCorrect = false;
 
         switch (currentOperator)
         {
-            case "+":
-                result = LeftSelectedNumber + RightSelectedNumber;
-                break;
-            case "-":
-                result = LeftSelectedNumber - RightSelectedNumber;
-                break;
-            case "*":
-                result = LeftSelectedNumber * RightSelectedNumber;
-                break;
+            case "+": result = LeftSelectedNumber + RightSelectedNumber; break;
+            case "-": result = LeftSelectedNumber - RightSelectedNumber; break;
+            case "*": result = LeftSelectedNumber * RightSelectedNumber; break;
             case "/":
                 if (RightSelectedNumber != 0)
-                    result = (float)LeftSelectedNumber / RightSelectedNumber;
-                else
-                    valid = false;
+                    result = LeftSelectedNumber / RightSelectedNumber;
                 break;
         }
 
-        if (!valid)
+        if (result == targetNumber)
         {
-            UIManager.Instance.ShowFeedback(false);
-            return;
-        }
-
-        if (Mathf.Approximately(result, targetNumber))
-        {
+            isCorrect = true;
             score += 10;
-            scoreText.text = "Score: " + score;
-            UIManager.Instance.ShowFeedback(true);
+            UpdateScoreUI();
             GenerateTargetNumber();
+
+            if (correctSound != null)
+                correctSound.Play();
         }
         else
         {
-            UIManager.Instance.ShowFeedback(false);
+            if (incorrectSound != null)
+                incorrectSound.Play();
         }
+
+        UIManager.Instance.ShowFeedback(isCorrect);
     }
+
+    private void UpdateScoreUI()
+    {
+        scoreText.text = "Score: " + score;
+    }
+
+    #endregion
 }

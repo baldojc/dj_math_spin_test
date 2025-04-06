@@ -3436,14 +3436,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetNumberText: {fileID: 64426659}
-  selectedNumberText: {fileID: 2132903745}
   scoreText: {fileID: 522309520}
-  checkAnswerButton: {fileID: 1057141665}
-  operatorImage: {fileID: 733604043}
-  plusSprite: {fileID: -855298285791758126, guid: e021879cb79eae748a2fb4e6683c492a, type: 3}
-  minusSprite: {fileID: -4178046375966092550, guid: d305db91bd8b3544397cbb7333c2f0f7, type: 3}
-  multiplySprite: {fileID: -6470460504253458178, guid: 78e51a97638ed6d48a79eb885e1c79e2, type: 3}
-  divideSprite: {fileID: 6937817954938267909, guid: e1052789c41a06f4999f2497bd87b71f, type: 3}
+  selectedNumbersText: {fileID: 2132903745}
+  targetNumber: 0
+  score: 0
+  LeftSelectedNumber: 0
+  RightSelectedNumber: 0
+  currentOperator: 
+  currentDifficulty: 0
+  correctSound: {fileID: 0}
+  incorrectSound: {fileID: 0}
 --- !u!1 &1189463207
 GameObject:
   m_ObjectHideFlags: 0
