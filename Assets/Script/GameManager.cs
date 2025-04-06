@@ -5,11 +5,12 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance;
+
     public TextMeshProUGUI targetNumberText;
     public TextMeshProUGUI selectedNumberText;
     public TextMeshProUGUI scoreText;
     public Button checkAnswerButton;
-
     public Image operatorImage;
 
     public Sprite plusSprite;
@@ -26,6 +27,17 @@ public class GameManager : MonoBehaviour
     public int LeftSelectedNumber { get; private set; } = 3;
     public int RightSelectedNumber { get; private set; } = 1;
 
+    private void Awake()
+    {
+        if (Instance == null)
+            Instance = this;
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
+
     void Start()
     {
         checkAnswerButton.onClick.AddListener(CheckAnswer);
@@ -41,9 +53,9 @@ public class GameManager : MonoBehaviour
         GenerateTargetNumber();
     }
 
-    void GenerateTargetNumber()
+    public void GenerateTargetNumber()
     {
-        targetNumber = Random.Range(1, 7);
+        targetNumber = Random.Range(2, 20);
         targetNumberText.text = "Target: " + targetNumber.ToString();
 
         string[] operators = { "+", "-", "*", "/" };
@@ -53,6 +65,8 @@ public class GameManager : MonoBehaviour
         {
             operatorImage.sprite = opSprite;
         }
+
+        UpdateUI();
     }
 
     public void UpdateLeftNumber(int number)
@@ -69,12 +83,13 @@ public class GameManager : MonoBehaviour
 
     void UpdateUI()
     {
-        selectedNumberText.text = "Left: " + LeftSelectedNumber + ", Right: " + RightSelectedNumber;
+        selectedNumberText.text = $"Left: {LeftSelectedNumber}, Right: {RightSelectedNumber}";
     }
 
     void CheckAnswer()
     {
-        int result = 0;
+        float result = 0f;
+        bool valid = true;
 
         switch (currentOperator)
         {
@@ -89,15 +104,28 @@ public class GameManager : MonoBehaviour
                 break;
             case "/":
                 if (RightSelectedNumber != 0)
-                    result = LeftSelectedNumber / RightSelectedNumber;
+                    result = (float)LeftSelectedNumber / RightSelectedNumber;
+                else
+                    valid = false;
                 break;
         }
 
-        if (result == targetNumber)
+        if (!valid)
+        {
+            UIManager.Instance.ShowFeedback(false);
+            return;
+        }
+
+        if (Mathf.Approximately(result, targetNumber))
         {
             score += 10;
             scoreText.text = "Score: " + score;
+            UIManager.Instance.ShowFeedback(true);
             GenerateTargetNumber();
+        }
+        else
+        {
+            UIManager.Instance.ShowFeedback(false);
         }
     }
 }
