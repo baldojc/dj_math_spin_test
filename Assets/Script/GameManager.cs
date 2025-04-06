@@ -12,7 +12,6 @@ public class GameManager : MonoBehaviour
 
     public Image operatorImage;
 
-    // Assign these in the Inspector
     public Sprite plusSprite;
     public Sprite minusSprite;
     public Sprite multiplySprite;
@@ -31,7 +30,6 @@ public class GameManager : MonoBehaviour
     {
         checkAnswerButton.onClick.AddListener(CheckAnswer);
 
-        // Initialize operatorSprites dictionary using manually assigned sprites
         operatorSprites = new Dictionary<string, Sprite>()
         {
             { "+", plusSprite },
