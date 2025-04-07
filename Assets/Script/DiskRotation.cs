@@ -10,50 +10,41 @@ public class DiskRotation : MonoBehaviour
     private bool isDragging = false;
 
     private Vector2 lastTouchPosition;
-    private Collider2D diskCollider;
 
     void Start()
     {
+
         numbers = isLeftDisk ? new int[] { 3, 2, 8, 9, 7, 4 } : new int[] { 1, 6, 5, 2, 3, 9 };
-        diskCollider = GetComponent<Collider2D>();
     }
 
     void Update()
     {
-        HandleInput();
+        HandleTouch();
     }
 
-    void HandleInput()
+    void HandleTouch()
     {
-        Vector2 inputPos = Vector2.zero;
-
-        if (Input.touchCount > 0) // For touch input (mobile)
+        if (Input.touchCount > 0)
         {
             Touch touch = Input.GetTouch(0);
-            inputPos = Camera.main.ScreenToWorldPoint(touch.position);
-        }
-        else if (Input.GetMouseButton(0)) // For mouse input (Unity Editor)
-        {
-            inputPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        }
+            Vector2 touchWorldPos = Camera.main.ScreenToWorldPoint(touch.position);
 
-        if (inputPos != Vector2.zero)
-        {
-            switch (Input.touchCount > 0 ? Input.GetTouch(0).phase : (Input.GetMouseButtonDown(0) ? TouchPhase.Began : TouchPhase.Moved))
+            switch (touch.phase)
             {
                 case TouchPhase.Began:
-                    if (IsTouchOnThisDisk(inputPos))
+                    if (IsTouchOnThisDisk(touchWorldPos))
                     {
                         isDragging = true;
-                        lastTouchPosition = inputPos;
+                        lastTouchPosition = touchWorldPos;
                     }
                     break;
 
                 case TouchPhase.Moved:
                     if (isDragging)
                     {
-                        RotateDiskCircular(lastTouchPosition, inputPos);
-                        lastTouchPosition = inputPos;
+                        Vector2 currentTouchPos = touchWorldPos;
+                        RotateDiskCircular(lastTouchPosition, currentTouchPos);
+                        lastTouchPosition = currentTouchPos;
                     }
                     break;
 
@@ -67,7 +58,8 @@ public class DiskRotation : MonoBehaviour
 
     bool IsTouchOnThisDisk(Vector2 touchPos)
     {
-        return diskCollider != null && diskCollider.OverlapPoint(touchPos);
+        Collider2D col = GetComponent<Collider2D>();
+        return col != null && col.OverlapPoint(touchPos);
     }
 
     void RotateDiskCircular(Vector2 lastPos, Vector2 currentPos)

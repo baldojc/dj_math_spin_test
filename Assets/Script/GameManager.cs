@@ -93,11 +93,9 @@ public class GameManager : MonoBehaviour
 
         targetNumberText.text = "Target: " + targetNumber;
 
-        // Random operator selection
-        string[] operators = { "+", "-", "*", "/" };
+        string[] operators = { "+" };
         currentOperator = operators[Random.Range(0, operators.Length)];
 
-        // If addition operator, set the static behavior
         if (currentOperator == "+")
         {
             isAdditionOperatorStatic = true;
@@ -107,10 +105,8 @@ public class GameManager : MonoBehaviour
             isAdditionOperatorStatic = false;
         }
 
-        // Update operator image based on selected operator
         UpdateOperatorImage();
 
-        // Update selected numbers UI
         UpdateSelectedNumbersUI();
     }
 
@@ -136,7 +132,6 @@ public class GameManager : MonoBehaviour
 
     private void UpdateOperatorImage()
     {
-        // Update the operator image based on the current operator
         if (operatorImage != null && operatorSprites != null && operatorSprites.TryGetValue(currentOperator, out Sprite sprite))
         {
             operatorImage.sprite = sprite;
@@ -159,7 +154,6 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
-        // Check answer and update score
         if (result == targetNumber)
         {
             isCorrect = true;
@@ -167,13 +161,11 @@ public class GameManager : MonoBehaviour
             UpdateScoreUI();
             GenerateTargetNumber();
 
-            // Play correct sound if defined
             if (correctSound != null)
                 correctSound.Play();
         }
         else
         {
-            // Play incorrect sound if defined
             if (incorrectSound != null)
                 incorrectSound.Play();
         }
