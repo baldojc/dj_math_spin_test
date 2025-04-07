@@ -3470,6 +3470,11 @@ MonoBehaviour:
   currentDifficulty: 0
   correctSound: {fileID: 0}
   incorrectSound: {fileID: 0}
+  operatorImage: {fileID: 733604043}
+  plusSprite: {fileID: -855298285791758126, guid: e021879cb79eae748a2fb4e6683c492a, type: 3}
+  minusSprite: {fileID: -4178046375966092550, guid: d305db91bd8b3544397cbb7333c2f0f7, type: 3}
+  multiplySprite: {fileID: -6470460504253458178, guid: 78e51a97638ed6d48a79eb885e1c79e2, type: 3}
+  divideSprite: {fileID: 6937817954938267909, guid: e1052789c41a06f4999f2497bd87b71f, type: 3}
 --- !u!1 &1189463207
 GameObject:
   m_ObjectHideFlags: 0
@@ -3767,7 +3772,7 @@ MonoBehaviour:
   m_TrackedDevicePositionAction: {fileID: 6564999863303420839, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
   m_TrackedDeviceOrientationAction: {fileID: 7970375526676320489, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
   m_DeselectOnBackgroundClick: 1
-  m_PointerBehavior: 0
+  m_PointerBehavior: 2
   m_CursorLockBehavior: 0
   m_ScrollDeltaPerTick: 6
 --- !u!114 &1385369499
@@ -5384,7 +5389,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2078599001
 RectTransform:
   m_ObjectHideFlags: 0

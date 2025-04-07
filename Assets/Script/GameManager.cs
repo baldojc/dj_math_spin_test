@@ -26,8 +26,15 @@ public class GameManager : MonoBehaviour
 
     public Image operatorImage;
 
-    // Dictionary for dynamic sprite loading
-    private Dictionary<string, Sprite> operatorSprites = new Dictionary<string, Sprite>();
+    public Sprite plusSprite;
+    public Sprite minusSprite;
+    public Sprite multiplySprite;
+    public Sprite divideSprite;
+
+    private Dictionary<string, Sprite> operatorSprites;
+
+    // Static flag for addition operator
+    private static bool isAdditionOperatorStatic = false;
 
     private void Awake()
     {
@@ -44,7 +51,18 @@ public class GameManager : MonoBehaviour
     {
         score = 0;
         UpdateScoreUI();
-        LoadOperatorSprites();
+
+        // Initialize sprite dictionary
+        operatorSprites = new Dictionary<string, Sprite>()
+        {
+            { "+", plusSprite },
+            { "-", minusSprite },
+            { "*", multiplySprite },
+            { "/", divideSprite }
+        };
+
+        // Initial game setup
+        GenerateTargetNumber();
     }
 
     #region Game Flow
@@ -59,6 +77,7 @@ public class GameManager : MonoBehaviour
 
     public void GenerateTargetNumber()
     {
+        // Set target number based on difficulty
         switch (currentDifficulty)
         {
             case Difficulty.Easy:
@@ -74,11 +93,24 @@ public class GameManager : MonoBehaviour
 
         targetNumberText.text = "Target: " + targetNumber;
 
-        // Randomly select operator
+        // Random operator selection
         string[] operators = { "+", "-", "*", "/" };
         currentOperator = operators[Random.Range(0, operators.Length)];
 
+        // If addition operator, set the static behavior
+        if (currentOperator == "+")
+        {
+            isAdditionOperatorStatic = true;
+        }
+        else
+        {
+            isAdditionOperatorStatic = false;
+        }
+
+        // Update operator image based on selected operator
         UpdateOperatorImage();
+
+        // Update selected numbers UI
         UpdateSelectedNumbersUI();
     }
 
@@ -102,25 +134,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void LoadOperatorSprites()
-    {
-        operatorSprites["+"] = Resources.Load<Sprite>("Sprite/plus");
-        operatorSprites["-"] = Resources.Load<Sprite>("Sprite/minus");
-        operatorSprites["*"] = Resources.Load<Sprite>("Sprite/multiply");
-        operatorSprites["/"] = Resources.Load<Sprite>("Sprite/divide");
-    }
-
     private void UpdateOperatorImage()
     {
-        if (operatorImage == null) return;
-
-        if (operatorSprites.TryGetValue(currentOperator, out Sprite opSprite))
+        // Update the operator image based on the current operator
+        if (operatorImage != null && operatorSprites != null && operatorSprites.TryGetValue(currentOperator, out Sprite sprite))
         {
-            operatorImage.sprite = opSprite;
-        }
-        else
-        {
-            Debug.LogWarning("Operator sprite not found for: " + currentOperator);
+            operatorImage.sprite = sprite;
         }
     }
 
@@ -140,6 +159,7 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
+        // Check answer and update score
         if (result == targetNumber)
         {
             isCorrect = true;
@@ -147,11 +167,13 @@ public class GameManager : MonoBehaviour
             UpdateScoreUI();
             GenerateTargetNumber();
 
+            // Play correct sound if defined
             if (correctSound != null)
                 correctSound.Play();
         }
         else
         {
+            // Play incorrect sound if defined
             if (incorrectSound != null)
                 incorrectSound.Play();
         }
@@ -163,4 +185,10 @@ public class GameManager : MonoBehaviour
     }
 
     #endregion
+
+    // Static access to check if the operator is addition
+    public static bool IsAdditionOperatorStatic()
+    {
+        return isAdditionOperatorStatic;
+    }
 }
