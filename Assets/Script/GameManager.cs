@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -23,6 +24,11 @@ public class GameManager : MonoBehaviour
     public AudioSource correctSound;
     public AudioSource incorrectSound;
 
+    public Image operatorImage;
+
+    // Dictionary for dynamic sprite loading
+    private Dictionary<string, Sprite> operatorSprites = new Dictionary<string, Sprite>();
+
     private void Awake()
     {
         if (Instance == null)
@@ -38,6 +44,7 @@ public class GameManager : MonoBehaviour
     {
         score = 0;
         UpdateScoreUI();
+        LoadOperatorSprites();
     }
 
     #region Game Flow
@@ -55,19 +62,25 @@ public class GameManager : MonoBehaviour
         switch (currentDifficulty)
         {
             case Difficulty.Easy:
-                targetNumber = Random.Range(5, 21); // Simple numbers
+                targetNumber = Random.Range(3, 18);
                 break;
             case Difficulty.Medium:
-                targetNumber = Random.Range(10, 51);
+                targetNumber = Random.Range(1, 100);
                 break;
             case Difficulty.Hard:
-                targetNumber = Random.Range(20, 100);
+                targetNumber = Random.Range(1, 200);
                 break;
         }
 
         targetNumberText.text = "Target: " + targetNumber;
-    }
 
+        // Randomly select operator
+        string[] operators = { "+", "-", "*", "/" };
+        currentOperator = operators[Random.Range(0, operators.Length)];
+
+        UpdateOperatorImage();
+        UpdateSelectedNumbersUI();
+    }
 
     public void UpdateLeftNumber(int number)
     {
@@ -86,6 +99,28 @@ public class GameManager : MonoBehaviour
         if (selectedNumbersText != null)
         {
             selectedNumbersText.text = $"{LeftSelectedNumber} {currentOperator} {RightSelectedNumber}";
+        }
+    }
+
+    private void LoadOperatorSprites()
+    {
+        operatorSprites["+"] = Resources.Load<Sprite>("Sprite/plus");
+        operatorSprites["-"] = Resources.Load<Sprite>("Sprite/minus");
+        operatorSprites["*"] = Resources.Load<Sprite>("Sprite/multiply");
+        operatorSprites["/"] = Resources.Load<Sprite>("Sprite/divide");
+    }
+
+    private void UpdateOperatorImage()
+    {
+        if (operatorImage == null) return;
+
+        if (operatorSprites.TryGetValue(currentOperator, out Sprite opSprite))
+        {
+            operatorImage.sprite = opSprite;
+        }
+        else
+        {
+            Debug.LogWarning("Operator sprite not found for: " + currentOperator);
         }
     }
 
@@ -120,7 +155,6 @@ public class GameManager : MonoBehaviour
             if (incorrectSound != null)
                 incorrectSound.Play();
         }
-
     }
 
     private void UpdateScoreUI()
