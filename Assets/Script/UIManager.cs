@@ -33,7 +33,6 @@ public class UIManager : MonoBehaviour
         difficultyMenuPanel.SetActive(false);
         gamePanel.SetActive(false);
         pausePanel.SetActive(false);
-        feedbackPanel.SetActive(false);
     }
 
     public void ShowDifficultyMenu()
@@ -42,7 +41,6 @@ public class UIManager : MonoBehaviour
         difficultyMenuPanel.SetActive(true);
         gamePanel.SetActive(false);
         pausePanel.SetActive(false);
-        feedbackPanel.SetActive(false);
     }
 
     public void StartGame()
@@ -51,7 +49,6 @@ public class UIManager : MonoBehaviour
         difficultyMenuPanel.SetActive(false);
         gamePanel.SetActive(true);
         pausePanel.SetActive(false);
-        feedbackPanel.SetActive(false);
 
         GameManager.Instance.GenerateTargetNumber();
     }
@@ -71,8 +68,5 @@ public class UIManager : MonoBehaviour
         Invoke("HideFeedback", 1.5f);
     }
 
-    private void HideFeedback()
-    {
-        feedbackPanel.SetActive(false);
-    }
+  
 }

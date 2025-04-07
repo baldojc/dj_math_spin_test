@@ -121,7 +121,6 @@ public class GameManager : MonoBehaviour
                 incorrectSound.Play();
         }
 
-        UIManager.Instance.ShowFeedback(isCorrect);
     }
 
     private void UpdateScoreUI()
