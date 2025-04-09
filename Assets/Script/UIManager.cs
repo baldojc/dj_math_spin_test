@@ -14,6 +14,12 @@ public class UIManager : MonoBehaviour
     public Sprite correctSprite;
     public Sprite incorrectSprite;
 
+    public Image operatorImage;
+    public Sprite additionSprite;
+    public Sprite subtractionSprite;
+    public Sprite multiplicationSprite;
+    public Sprite divisionSprite;
+
     private void Awake()
     {
         if (Instance == null)
@@ -68,5 +74,59 @@ public class UIManager : MonoBehaviour
         Invoke("HideFeedback", 1.5f);
     }
 
-  
+    private void HideFeedback()
+    {
+        feedbackPanel.SetActive(false);
+    }
+
+    // Button Actions
+    public void OnAdditionSelected()
+    {
+        SetOperator("+");
+    }
+
+    public void OnSubtractionSelected()
+    {
+        SetOperator("-");
+    }
+
+    public void OnMultiplicationSelected()
+    {
+        SetOperator("*");
+    }
+
+    public void OnDivisionSelected()
+    {
+        SetOperator("/");
+    }
+
+    public void SetOperator(string operatorChoice)
+    {
+        GameManager.Instance.SetOperator(operatorChoice);
+        GameManager.Instance.GenerateTargetNumber();
+        ShowGamePanel();
+    }
+
+    private void ShowGamePanel()
+    {
+        gamePanel.SetActive(true);
+        operatorImage.sprite = GetOperatorSprite();
+    }
+
+    private Sprite GetOperatorSprite()
+    {
+        switch (GameManager.Instance.currentOperator)
+        {
+            case "+":
+                return additionSprite;
+            case "-":
+                return subtractionSprite;
+            case "*":
+                return multiplicationSprite;
+            case "/":
+                return divisionSprite;
+            default:
+                return null;
+        }
+    }
 }

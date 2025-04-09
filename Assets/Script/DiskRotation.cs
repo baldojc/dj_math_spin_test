@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro; // Import the TMPro namespace
 
 public class DiskRotation : MonoBehaviour
 {
@@ -13,8 +14,8 @@ public class DiskRotation : MonoBehaviour
 
     void Start()
     {
-
-        numbers = isLeftDisk ? new int[] { 3, 2, 8, 9, 7, 4 } : new int[] { 1, 6, 5, 2, 3, 9 };
+        // Adjust the number range based on difficulty
+        SetNumbersForDifficulty();
     }
 
     void Update()
@@ -81,5 +82,22 @@ public class DiskRotation : MonoBehaviour
             gameManager.UpdateLeftNumber(numbers[selectedIndex]);
         else
             gameManager.UpdateRightNumber(numbers[selectedIndex]);
+    }
+
+    // Adjust number selection for difficulty
+    void SetNumbersForDifficulty()
+    {
+        switch (gameManager.currentDifficulty)
+        {
+            case GameManager.Difficulty.Easy:
+                numbers = isLeftDisk ? new int[] { 1, 2, 3, 4, 5 } : new int[] { 1, 2, 3, 4, 5 };
+                break;
+            case GameManager.Difficulty.Medium:
+                numbers = isLeftDisk ? new int[] { 6, 7, 8, 9, 10 } : new int[] { 6, 7, 8, 9, 10 };
+                break;
+            case GameManager.Difficulty.Hard:
+                numbers = isLeftDisk ? new int[] { 11, 12, 13, 14, 15 } : new int[] { 11, 12, 13, 14, 15 };
+                break;
+        }
     }
 }

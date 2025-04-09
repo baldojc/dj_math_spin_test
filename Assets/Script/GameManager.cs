@@ -1,186 +1,101 @@
 using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
-using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
-    public TextMeshProUGUI targetNumberText;
-    public TextMeshProUGUI scoreText;
-    public TextMeshProUGUI selectedNumbersText;
-
+    public string currentOperator; // "+" for addition, "-" for subtraction, etc.
     public int targetNumber;
-    public int score = 0;
+    public int[] numbers;
 
-    public int LeftSelectedNumber;
-    public int RightSelectedNumber;
-    public string currentOperator = "+";
+    // Store the left and right numbers (for the two disks)
+    public int leftNumber;
+    public int rightNumber;
 
     public enum Difficulty { Easy, Medium, Hard }
-    public Difficulty currentDifficulty = Difficulty.Easy;
+    public Difficulty currentDifficulty;
 
-    public AudioSource correctSound;
-    public AudioSource incorrectSound;
-
-    public Image operatorImage;
-
-    public Sprite plusSprite;
-    public Sprite minusSprite;
-    public Sprite multiplySprite;
-    public Sprite divideSprite;
-
-    private Dictionary<string, Sprite> operatorSprites;
-
-    // Static flag for addition operator
-    private static bool isAdditionOperatorStatic = false;
+    // References to the TextMesh Pro components
+    public TextMeshProUGUI leftNumberText;
+    public TextMeshProUGUI rightNumberText;
+    public TextMeshProUGUI targetNumberText;
+    public TextMeshProUGUI operatorText;
 
     private void Awake()
     {
         if (Instance == null)
             Instance = this;
         else
-        {
             Destroy(gameObject);
-            return;
-        }
     }
 
-    private void Start()
+    public void SetOperator(string operatorChoice)
     {
-        score = 0;
-        UpdateScoreUI();
-
-        // Initialize sprite dictionary
-        operatorSprites = new Dictionary<string, Sprite>()
-        {
-            { "+", plusSprite },
-            { "-", minusSprite },
-            { "*", multiplySprite },
-            { "/", divideSprite }
-        };
-
-        // Initial game setup
-        GenerateTargetNumber();
-    }
-
-    #region Game Flow
-
-    public void SetDifficulty(Difficulty difficulty)
-    {
-        currentDifficulty = difficulty;
-        score = 0;
-        UpdateScoreUI();
-        GenerateTargetNumber();
+        currentOperator = operatorChoice;
+        UpdateOperatorImage();
     }
 
     public void GenerateTargetNumber()
     {
-        // Set target number based on difficulty
+        // Generate target number based on the selected operator
+        switch (currentOperator)
+        {
+            case "+":
+                targetNumber = Random.Range(1, 10) + Random.Range(1, 10); // Example for easy level
+                break;
+            case "-":
+                targetNumber = Random.Range(10, 20) - Random.Range(1, 10); // Example for easy level
+                break;
+            case "*":
+                targetNumber = Random.Range(1, 5) * Random.Range(1, 5); // Example for easy level
+                break;
+            case "/":
+                targetNumber = Random.Range(10, 20); // Just a placeholder
+                break;
+        }
+
+        // Set the numbers for the disks
+        SetNumbersForDifficulty();
+
+        // Update the UI texts
+        targetNumberText.text = "Target: " + targetNumber.ToString();
+        operatorText.text = currentOperator;
+        UpdateLeftNumber(leftNumber);
+        UpdateRightNumber(rightNumber);
+    }
+
+    void SetNumbersForDifficulty()
+    {
         switch (currentDifficulty)
         {
             case Difficulty.Easy:
-                targetNumber = Random.Range(3, 18);
+                numbers = new int[] { 1, 2, 3, 4, 5 };
                 break;
             case Difficulty.Medium:
-                targetNumber = Random.Range(1, 100);
+                numbers = new int[] { 6, 7, 8, 9, 10 };
                 break;
             case Difficulty.Hard:
-                targetNumber = Random.Range(1, 200);
+                numbers = new int[] { 11, 12, 13, 14, 15 };
                 break;
         }
-
-        targetNumberText.text = "Target: " + targetNumber;
-
-        string[] operators = { "+" };
-        currentOperator = operators[Random.Range(0, operators.Length)];
-
-        if (currentOperator == "+")
-        {
-            isAdditionOperatorStatic = true;
-        }
-        else
-        {
-            isAdditionOperatorStatic = false;
-        }
-
-        UpdateOperatorImage();
-
-        UpdateSelectedNumbersUI();
     }
 
-    public void UpdateLeftNumber(int number)
+    public void UpdateLeftNumber(int newNumber)
     {
-        LeftSelectedNumber = number;
-        UpdateSelectedNumbersUI();
+        leftNumber = newNumber;
+        leftNumberText.text = newNumber.ToString(); // Update the left number TextMesh Pro
     }
 
-    public void UpdateRightNumber(int number)
+    public void UpdateRightNumber(int newNumber)
     {
-        RightSelectedNumber = number;
-        UpdateSelectedNumbersUI();
+        rightNumber = newNumber;
+        rightNumberText.text = newNumber.ToString(); // Update the right number TextMesh Pro
     }
 
-    private void UpdateSelectedNumbersUI()
+    public void UpdateOperatorImage()
     {
-        if (selectedNumbersText != null)
-        {
-            selectedNumbersText.text = $"{LeftSelectedNumber} {currentOperator} {RightSelectedNumber}";
-        }
-    }
-
-    private void UpdateOperatorImage()
-    {
-        if (operatorImage != null && operatorSprites != null && operatorSprites.TryGetValue(currentOperator, out Sprite sprite))
-        {
-            operatorImage.sprite = sprite;
-        }
-    }
-
-    public void CheckAnswer()
-    {
-        int result = 0;
-        bool isCorrect = false;
-
-        switch (currentOperator)
-        {
-            case "+": result = LeftSelectedNumber + RightSelectedNumber; break;
-            case "-": result = LeftSelectedNumber - RightSelectedNumber; break;
-            case "*": result = LeftSelectedNumber * RightSelectedNumber; break;
-            case "/":
-                if (RightSelectedNumber != 0)
-                    result = LeftSelectedNumber / RightSelectedNumber;
-                break;
-        }
-
-        if (result == targetNumber)
-        {
-            isCorrect = true;
-            score += 10;
-            UpdateScoreUI();
-            GenerateTargetNumber();
-
-            if (correctSound != null)
-                correctSound.Play();
-        }
-        else
-        {
-            if (incorrectSound != null)
-                incorrectSound.Play();
-        }
-    }
-
-    private void UpdateScoreUI()
-    {
-        scoreText.text = "Score: " + score;
-    }
-
-    #endregion
-
-    // Static access to check if the operator is addition
-    public static bool IsAdditionOperatorStatic()
-    {
-        return isAdditionOperatorStatic;
+        // This will update the operator image based on the selected operator
+        UIManager.Instance.ShowFeedback(currentOperator == "+" ? true : false);
     }
 }
