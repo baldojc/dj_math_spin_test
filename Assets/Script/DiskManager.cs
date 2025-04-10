@@ -2,394 +2,228 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class DiskManager : MonoBehaviour
 {
-    // References to disk objects
+    [Header("Disk References")]
     public GameObject leftDisk;
     public GameObject rightDisk;
+    public TextMeshProUGUI leftNumberText;
+    public TextMeshProUGUI rightNumberText;
 
-    // References to disk rotation scripts
-    private DiskRotation leftDiskRotation;
-    private DiskRotation rightDiskRotation;
+    [Header("Disk Texts")]
+    public TextMeshProUGUI[] leftDiskTexts;
+    public TextMeshProUGUI[] rightDiskTexts;
 
-    // References to text elements
-    public TextMeshPro[] leftDiskTexts = new TextMeshPro[5];
-    public TextMeshPro[] rightDiskTexts = new TextMeshPro[5];
+    [Header("Arrow Controls")]
+    public Button leftArrowButton;
+    public Button rightArrowButton;
 
-    // Reference to GameManager
-    private GameManager gameManager;
+    [Header("Rotation Settings")]
+    public float rotationSpeed = 120f;
+    public float snapDuration = 0.3f;
 
-    // Audio settings
-    private bool isMuted = false;
-    public AudioSource backgroundMusic;
-    public AudioSource[] soundEffects;
+    [Header("Audio")]
+    public AudioClip diskRotateSound;
+    private AudioSource audioSource;
 
-    // Start is called before the first frame update
-    void Start()
+    // Disk data
+    private List<int> leftDiskNumbers = new List<int>();
+    private List<int> rightDiskNumbers = new List<int>();
+
+    // Current position indices
+    private int currentLeftIndex = 0;
+    private int currentRightIndex = 0;
+
+    // Rotation state
+    private bool isLeftDiskRotating = false;
+    private bool isRightDiskRotating = false;
+
+    // Target rotation angles
+    private float leftDiskTargetAngle = 0f;
+    private float rightDiskTargetAngle = 0f;
+
+    // Angle per number (for 5 numbers, each number takes 72 degrees)
+    private const float ANGLE_PER_NUMBER = 72f;
+
+    private void Start()
     {
-        Debug.Log("DiskManager: Start method called");
+        // Set up button listeners
+        leftArrowButton.onClick.AddListener(RotateLeftDisk);
+        rightArrowButton.onClick.AddListener(RotateRightDisk);
 
-        // Find GameManager
-        gameManager = GetComponent<GameManager>();
-        if (gameManager == null)
+        // Get audio source component
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
         {
-            gameManager = FindObjectOfType<GameManager>();
-            if (gameManager == null)
-            {
-                Debug.LogError("DiskManager: GameManager not found!");
-            }
-        }
-
-        // Find disks if not assigned
-        if (leftDisk == null)
-        {
-            leftDisk = transform.parent.Find("LeftDisk")?.gameObject;
-            if (leftDisk == null)
-            {
-                leftDisk = GameObject.Find("LeftDisk");
-                if (leftDisk == null)
-                {
-                    Debug.LogError("DiskManager: LeftDisk not found!");
-                }
-            }
-        }
-
-        if (rightDisk == null)
-        {
-            rightDisk = transform.parent.Find("RightDisk")?.gameObject;
-            if (rightDisk == null)
-            {
-                rightDisk = GameObject.Find("RightDisk");
-                if (rightDisk == null)
-                {
-                    Debug.LogError("DiskManager: RightDisk not found!");
-                }
-            }
-        }
-
-        // Get disk rotation scripts
-        if (leftDisk != null)
-        {
-            leftDiskRotation = leftDisk.GetComponent<DiskRotation>();
-            if (leftDiskRotation == null)
-            {
-                leftDiskRotation = leftDisk.AddComponent<DiskRotation>();
-                leftDiskRotation.isLeftDisk = true;
-                leftDiskRotation.gameManager = gameManager;
-                Debug.Log("DiskManager: Added DiskRotation to LeftDisk");
-            }
-            else
-            {
-                // Ensure properties are set correctly
-                leftDiskRotation.isLeftDisk = true;
-                if (leftDiskRotation.gameManager == null)
-                    leftDiskRotation.gameManager = gameManager;
-            }
-        }
-
-        if (rightDisk != null)
-        {
-            rightDiskRotation = rightDisk.GetComponent<DiskRotation>();
-            if (rightDiskRotation == null)
-            {
-                rightDiskRotation = rightDisk.AddComponent<DiskRotation>();
-                rightDiskRotation.isLeftDisk = false;
-                rightDiskRotation.gameManager = gameManager;
-                Debug.Log("DiskManager: Added DiskRotation to RightDisk");
-            }
-            else
-            {
-                // Ensure properties are set correctly
-                rightDiskRotation.isLeftDisk = false;
-                if (rightDiskRotation.gameManager == null)
-                    rightDiskRotation.gameManager = gameManager;
-            }
-        }
-
-        // Find Text elements if not assigned
-        FindDiskTextElements();
-
-        // Set up background music if available
-        if (backgroundMusic == null)
-        {
-            GameObject audioObj = GameObject.Find("Main_Menu_Panel/Audio Source");
-            if (audioObj != null)
-            {
-                backgroundMusic = audioObj.GetComponent<AudioSource>();
-                Debug.Log("DiskManager: Found background music");
-            }
-        }
-
-        // Find sound effects if not assigned
-        if (soundEffects == null || soundEffects.Length == 0)
-        {
-            GameObject audioParent = GameObject.Find("GameObject_2DObject/Audio");
-            if (audioParent != null)
-            {
-                soundEffects = audioParent.GetComponentsInChildren<AudioSource>();
-                Debug.Log($"DiskManager: Found {soundEffects.Length} sound effects");
-            }
-        }
-
-        // Load saved audio settings
-        LoadAudioSettings();
-    }
-
-    // Find all text elements on disks
-    private void FindDiskTextElements()
-    {
-        Debug.Log("DiskManager: Finding disk text elements");
-
-        if (leftDisk != null)
-        {
-            bool foundAllLeft = true;
-            for (int i = 0; i < 5; i++)
-            {
-                if (leftDiskTexts[i] == null)
-                {
-                    Transform textTransform = leftDisk.transform.Find($"leftDiskText{i + 1}");
-                    if (textTransform != null)
-                    {
-                        leftDiskTexts[i] = textTransform.GetComponent<TextMeshPro>();
-                        if (leftDiskTexts[i] == null)
-                        {
-                            Debug.LogError($"DiskManager: leftDiskText{i + 1} has no TextMeshPro component!");
-                            foundAllLeft = false;
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError($"DiskManager: leftDiskText{i + 1} not found!");
-                        foundAllLeft = false;
-                    }
-                }
-            }
-
-            Debug.Log($"DiskManager: {(foundAllLeft ? "Successfully found" : "Failed to find")} all left disk texts");
-        }
-
-        if (rightDisk != null)
-        {
-            bool foundAllRight = true;
-            for (int i = 0; i < 5; i++)
-            {
-                if (rightDiskTexts[i] == null)
-                {
-                    Transform textTransform = rightDisk.transform.Find($"rightDiskText{i + 1}");
-                    if (textTransform != null)
-                    {
-                        rightDiskTexts[i] = textTransform.GetComponent<TextMeshPro>();
-                        if (rightDiskTexts[i] == null)
-                        {
-                            Debug.LogError($"DiskManager: rightDiskText{i + 1} has no TextMeshPro component!");
-                            foundAllRight = false;
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError($"DiskManager: rightDiskText{i + 1} not found!");
-                        foundAllRight = false;
-                    }
-                }
-            }
-
-            Debug.Log($"DiskManager: {(foundAllRight ? "Successfully found" : "Failed to find")} all right disk texts");
-        }
-
-        // Pass references to GameManager
-        if (gameManager != null)
-        {
-            gameManager.leftDiskTexts = leftDiskTexts;
-            gameManager.rightDiskTexts = rightDiskTexts;
-        }
-        else
-        {
-            Debug.LogError("DiskManager: Cannot pass text references - GameManager is null!");
-        }
-
-        // Also pass to disk rotation scripts
-        if (leftDiskRotation != null)
-        {
-            leftDiskRotation.numberTexts = leftDiskTexts;
-        }
-
-        if (rightDiskRotation != null)
-        {
-            rightDiskRotation.numberTexts = rightDiskTexts;
+            audioSource = gameObject.AddComponent<AudioSource>();
         }
     }
 
-    // Set the numbers on disk texts
-    public void SetDiskNumbers(int[] leftNumbers, int[] rightNumbers)
+    private void Update()
     {
-        Debug.Log("DiskManager: SetDiskNumbers called");
+        // Handle disk rotations
+        HandleDiskRotation(leftDisk, ref isLeftDiskRotating, leftDiskTargetAngle);
+        HandleDiskRotation(rightDisk, ref isRightDiskRotating, rightDiskTargetAngle);
+    }
 
-        for (int i = 0; i < 5; i++)
+    // Set up numbers for both disks
+    public void SetDiskNumbers(List<int> leftNumbers, List<int> rightNumbers)
+    {
+        // Make sure we have exactly 5 numbers for each disk
+        if (leftNumbers.Count != 5 || rightNumbers.Count != 5)
         {
-            if (i < leftNumbers.Length && leftDiskTexts[i] != null)
-            {
-                leftDiskTexts[i].text = leftNumbers[i].ToString();
-                Debug.Log($"DiskManager: Set leftDiskText{i + 1} to '{leftNumbers[i]}'");
-            }
+            Debug.LogError("Each disk must have exactly 5 numbers");
+            return;
+        }
 
-            if (i < rightNumbers.Length && rightDiskTexts[i] != null)
-            {
-                rightDiskTexts[i].text = rightNumbers[i].ToString();
-                Debug.Log($"DiskManager: Set rightDiskText{i + 1} to '{rightNumbers[i]}'");
-            }
+        // Store the numbers
+        leftDiskNumbers = new List<int>(leftNumbers);
+        rightDiskNumbers = new List<int>(rightNumbers);
+
+        // Reset disk positions
+        currentLeftIndex = 0;
+        currentRightIndex = 0;
+        leftDisk.transform.rotation = Quaternion.identity;
+        rightDisk.transform.rotation = Quaternion.identity;
+        leftDiskTargetAngle = 0f;
+        rightDiskTargetAngle = 0f;
+
+        // Update text displays
+        UpdateDiskTexts();
+    }
+
+    // Update the text elements on both disks
+    private void UpdateDiskTexts()
+    {
+        // Update left disk texts
+        for (int i = 0; i < leftDiskTexts.Length; i++)
+        {
+            leftDiskTexts[i].text = leftDiskNumbers[i].ToString();
+        }
+
+        // Update right disk texts
+        for (int i = 0; i < rightDiskTexts.Length; i++)
+        {
+            rightDiskTexts[i].text = rightDiskNumbers[i].ToString();
+        }
+
+        // Update the current selection texts
+        UpdateSelectionTexts();
+    }
+
+    // Update the selection display
+    private void UpdateSelectionTexts()
+    {
+        leftNumberText.text = leftDiskNumbers[currentLeftIndex].ToString();
+        rightNumberText.text = rightDiskNumbers[currentRightIndex].ToString();
+    }
+
+    // Rotate the left disk to the next number
+    public void RotateLeftDisk()
+    {
+        if (isLeftDiskRotating) return;
+
+        // Update the index
+        currentLeftIndex = (currentLeftIndex + 1) % 5;
+
+        // Set the target angle
+        leftDiskTargetAngle -= ANGLE_PER_NUMBER;
+
+        // Start rotation
+        isLeftDiskRotating = true;
+
+        // Play rotation sound
+        PlayRotationSound();
+    }
+
+    // Rotate the right disk to the next number
+    public void RotateRightDisk()
+    {
+        if (isRightDiskRotating) return;
+
+        // Update the index
+        currentRightIndex = (currentRightIndex + 1) % 5;
+
+        // Set the target angle
+        rightDiskTargetAngle -= ANGLE_PER_NUMBER;
+
+        // Start rotation
+        isRightDiskRotating = true;
+
+        // Play rotation sound
+        PlayRotationSound();
+    }
+
+    // Handle smooth disk rotation
+    private void HandleDiskRotation(GameObject disk, ref bool isRotating, float targetAngle)
+    {
+        if (!isRotating) return;
+
+        // Calculate current rotation in Euler angles
+        Vector3 currentRotation = disk.transform.rotation.eulerAngles;
+
+        // Calculate the target rotation
+        Vector3 targetRotation = new Vector3(currentRotation.x, currentRotation.y, targetAngle);
+
+        // Rotate the disk smoothly
+        disk.transform.rotation = Quaternion.Slerp(
+            disk.transform.rotation,
+            Quaternion.Euler(targetRotation),
+            rotationSpeed * Time.deltaTime
+        );
+
+        // Check if rotation is almost complete
+        if (Mathf.Abs(Mathf.DeltaAngle(currentRotation.z, targetAngle)) < 0.1f)
+        {
+            // Snap to exact angle
+            disk.transform.rotation = Quaternion.Euler(targetRotation);
+            isRotating = false;
+
+            // Update the selection texts
+            UpdateSelectionTexts();
         }
     }
 
-    // Rotate left disk by UI button press
-    public void RotateLeftDiskClockwise()
+    // Play rotation sound
+    private void PlayRotationSound()
     {
-        Debug.Log("DiskManager: RotateLeftDiskClockwise called");
-        if (leftDiskRotation != null)
+        if (audioSource != null && diskRotateSound != null)
         {
-            leftDiskRotation.RotateClockwise();
-        }
-        else
-        {
-            Debug.LogError("DiskManager: leftDiskRotation is null!");
+            audioSource.PlayOneShot(diskRotateSound);
         }
     }
 
-    public void RotateLeftDiskCounterClockwise()
+    // Set the disk position directly (used by the DiskRotationController)
+    public void SetLeftDiskPosition(int index)
     {
-        Debug.Log("DiskManager: RotateLeftDiskCounterClockwise called");
-        if (leftDiskRotation != null)
+        if (index >= 0 && index < 5)
         {
-            leftDiskRotation.RotateCounterClockwise();
-        }
-        else
-        {
-            Debug.LogError("DiskManager: leftDiskRotation is null!");
+            currentLeftIndex = index;
+            UpdateSelectionTexts();
         }
     }
 
-    // Rotate right disk by UI button press
-    public void RotateRightDiskClockwise()
+    // Set the right disk position directly (used by the DiskRotationController)
+    public void SetRightDiskPosition(int index)
     {
-        Debug.Log("DiskManager: RotateRightDiskClockwise called");
-        if (rightDiskRotation != null)
+        if (index >= 0 && index < 5)
         {
-            rightDiskRotation.RotateClockwise();
-        }
-        else
-        {
-            Debug.LogError("DiskManager: rightDiskRotation is null!");
+            currentRightIndex = index;
+            UpdateSelectionTexts();
         }
     }
 
-    public void RotateRightDiskCounterClockwise()
+    // Get the currently selected number from the left disk
+    public int GetSelectedLeftNumber()
     {
-        Debug.Log("DiskManager: RotateRightDiskCounterClockwise called");
-        if (rightDiskRotation != null)
-        {
-            rightDiskRotation.RotateCounterClockwise();
-        }
-        else
-        {
-            Debug.LogError("DiskManager: rightDiskRotation is null!");
-        }
+        return leftDiskNumbers[currentLeftIndex];
     }
 
-    // Audio control methods
-    public void ToggleMute()
+    // Get the currently selected number from the right disk
+    public int GetSelectedRightNumber()
     {
-        Debug.Log("DiskManager: ToggleMute called");
-        isMuted = !isMuted;
-
-        // Apply mute state to background music
-        if (backgroundMusic != null)
-        {
-            backgroundMusic.mute = isMuted;
-        }
-
-        // Apply mute state to sound effects
-        if (soundEffects != null)
-        {
-            foreach (AudioSource source in soundEffects)
-            {
-                if (source != null)
-                {
-                    source.mute = isMuted;
-                }
-            }
-        }
-
-        // Save setting
-        PlayerPrefs.SetInt("IsMuted", isMuted ? 1 : 0);
-        PlayerPrefs.Save();
-
-        Debug.Log($"DiskManager: Audio is now {(isMuted ? "muted" : "unmuted")}");
-    }
-
-    // Explicitly mute or unmute
-    public void MuteAudio()
-    {
-        if (!isMuted)
-        {
-            ToggleMute();
-        }
-    }
-
-    public void UnmuteAudio()
-    {
-        if (isMuted)
-        {
-            ToggleMute();
-        }
-    }
-
-    // Load saved audio settings
-    private void LoadAudioSettings()
-    {
-        isMuted = PlayerPrefs.GetInt("IsMuted", 0) == 1;
-        Debug.Log($"DiskManager: Loaded audio settings - isMuted={isMuted}");
-
-        // Apply saved setting
-        if (backgroundMusic != null)
-        {
-            backgroundMusic.mute = isMuted;
-        }
-
-        if (soundEffects != null)
-        {
-            foreach (AudioSource source in soundEffects)
-            {
-                if (source != null)
-                {
-                    source.mute = isMuted;
-                }
-            }
-        }
-    }
-
-    // Show How To Play panel
-    public void ShowHowToPlay()
-    {
-        Debug.Log("DiskManager: ShowHowToPlay called");
-        // This would connect to a UI_Manager method to show the How To Play panel
-        UI_Manager uiManager = FindObjectOfType<UI_Manager>();
-        if (uiManager != null)
-        {
-            // Check if the method exists through reflection
-            var methodInfo = uiManager.GetType().GetMethod("ShowHowToPlayPanel");
-            if (methodInfo != null)
-            {
-                Debug.Log("DiskManager: Calling UI_Manager.ShowHowToPlayPanel");
-                methodInfo.Invoke(uiManager, null);
-            }
-            else
-            {
-                Debug.LogWarning("DiskManager: UI_Manager does not have ShowHowToPlayPanel method");
-            }
-        }
-        else
-        {
-            Debug.LogError("DiskManager: UI_Manager not found!");
-        }
+        return rightDiskNumbers[currentRightIndex];
     }
 }
