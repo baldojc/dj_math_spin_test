@@ -1,18 +1,51 @@
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
 
+    // Main Panels
     public GameObject mainMenuPanel;
+    public GameObject operationPickingPanel;
     public GameObject difficultyMenuPanel;
-    public GameObject gamePanel;
+    public GameObject gameOverPanel;
+
+    // Game Panels - using a consistent naming convention
+    // Addition panels
+    public GameObject gamePanel_Addition_Easy;
+    public GameObject gamePanel_Addition_Medium;
+    public GameObject gamePanel_Addition_Hard;
+
+    // Subtraction panels
+    public GameObject gamePanel_Subtraction_Easy;
+    public GameObject gamePanel_Subtraction_Medium;
+    public GameObject gamePanel_Subtraction_Hard;
+
+    // Multiplication panels
+    public GameObject gamePanel_Multiplication_Easy;
+    public GameObject gamePanel_Multiplication_Medium;
+    public GameObject gamePanel_Multiplication_Hard;
+
+    // Division panels
+    public GameObject gamePanel_Division_Easy;
+    public GameObject gamePanel_Division_Medium;
+    public GameObject gamePanel_Division_Hard;
+
+    // Common game UI elements
     public GameObject pausePanel;
     public GameObject feedbackPanel;
-    public Image feedbackImage;
+
+    // Feedback visuals
     public Sprite correctSprite;
     public Sprite incorrectSprite;
+
+    // Current active game panel reference
+    private GameObject currentGamePanel;
+
+    // Current selection
+    private string currentOperationStr;
+    private string currentDifficultyStr;
 
     private void Awake()
     {
@@ -23,34 +56,169 @@ public class UIManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
         ShowMainMenu();
     }
 
     public void ShowMainMenu()
     {
+        HideAllPanels();
+        ToggleHUD(false); // Hide the HUD in main menu
         mainMenuPanel.SetActive(true);
-        difficultyMenuPanel.SetActive(false);
-        gamePanel.SetActive(false);
-        pausePanel.SetActive(false);
+        Time.timeScale = 1;
+    }
+
+    public void ShowOperationMenu()
+    {
+        HideAllPanels();
+        operationPickingPanel.SetActive(true);
+    }
+
+    public void SelectOperation(string operation)
+    {
+        currentOperationStr = operation.ToLower();
+        ShowDifficultyMenu();
     }
 
     public void ShowDifficultyMenu()
     {
-        mainMenuPanel.SetActive(false);
+        HideAllPanels();
         difficultyMenuPanel.SetActive(true);
-        gamePanel.SetActive(false);
-        pausePanel.SetActive(false);
+    }
+
+    public void SelectDifficulty(string difficulty)
+    {
+        currentDifficultyStr = difficulty.ToLower();
+        StartGameWithCurrentSelections();
+    }
+
+    public void StartGameWithCurrentSelections()
+    {
+        // Convert string selections to enum values
+        GameManager.Operation operation = GetOperationFromString(currentOperationStr);
+        GameManager.Difficulty difficulty = GetDifficultyFromString(currentDifficultyStr);
+
+        // Set the operation and difficulty in GameManager
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetOperation(operation);
+            GameManager.Instance.SetDifficulty(difficulty);
+        }
+
+        // Start the game
+        StartGame();
+    }
+
+    private GameManager.Operation GetOperationFromString(string operationStr)
+    {
+        switch (operationStr.ToLower())
+        {
+            case "addition": return GameManager.Operation.Addition;
+            case "subtraction": return GameManager.Operation.Subtraction;
+            case "multiplication": return GameManager.Operation.Multiplication;
+            case "division": return GameManager.Operation.Division;
+            default: return GameManager.Operation.Addition;
+        }
+    }
+
+    private GameManager.Difficulty GetDifficultyFromString(string difficultyStr)
+    {
+        switch (difficultyStr.ToLower())
+        {
+            case "easy": return GameManager.Difficulty.Easy;
+            case "medium": return GameManager.Difficulty.Medium;
+            case "hard": return GameManager.Difficulty.Hard;
+            default: return GameManager.Difficulty.Easy;
+        }
     }
 
     public void StartGame()
     {
-        mainMenuPanel.SetActive(false);
-        difficultyMenuPanel.SetActive(false);
-        gamePanel.SetActive(true);
-        pausePanel.SetActive(false);
+        HideAllPanels();
 
-        GameManager.Instance.GenerateTargetNumber();
+        // Show the HUD for gameplay
+        ToggleHUD(true);
+
+        // Activate the specific game panel based on current selections
+        currentGamePanel = GetGamePanelForOperationAndDifficulty(currentOperationStr, currentDifficultyStr);
+
+        if (currentGamePanel != null)
+        {
+            currentGamePanel.SetActive(true);
+
+            // Find and initialize the disks in the current panel
+            SetupDisksInCurrentPanel();
+
+            // Generate a new target number
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.GenerateTargetNumber();
+            }
+        }
+        else
+        {
+            Debug.LogError($"Game panel not found for operation: {currentOperationStr}, difficulty: {currentDifficultyStr}");
+        }
+    }
+
+    private GameObject GetGamePanelForOperationAndDifficulty(string operation, string difficulty)
+    {
+        // Standardized approach to get the correct panel
+        operation = char.ToUpper(operation[0]) + operation.Substring(1).ToLower();
+        difficulty = char.ToUpper(difficulty[0]) + difficulty.Substring(1).ToLower();
+
+        switch (operation)
+        {
+            case "Addition":
+                switch (difficulty)
+                {
+                    case "Easy": return gamePanel_Addition_Easy;
+                    case "Medium": return gamePanel_Addition_Medium;
+                    case "Hard": return gamePanel_Addition_Hard;
+                }
+                break;
+            case "Subtraction":
+                switch (difficulty)
+                {
+                    case "Easy": return gamePanel_Subtraction_Easy;
+                    case "Medium": return gamePanel_Subtraction_Medium;
+                    case "Hard": return gamePanel_Subtraction_Hard;
+                }
+                break;
+            case "Multiplication":
+                switch (difficulty)
+                {
+                    case "Easy": return gamePanel_Multiplication_Easy;
+                    case "Medium": return gamePanel_Multiplication_Medium;
+                    case "Hard": return gamePanel_Multiplication_Hard;
+                }
+                break;
+            case "Division":
+                switch (difficulty)
+                {
+                    case "Easy": return gamePanel_Division_Easy;
+                    case "Medium": return gamePanel_Division_Medium;
+                    case "Hard": return gamePanel_Division_Hard;
+                }
+                break;
+        }
+
+        return null;
+    }
+
+    private void SetupDisksInCurrentPanel()
+    {
+        if (currentGamePanel == null) return;
+
+        // Find the disks in the current game panel
+        DiskRotation[] disks = currentGamePanel.GetComponentsInChildren<DiskRotation>(true);
+
+        foreach (DiskRotation disk in disks)
+        {
+            // Refresh the disk numbers based on current operation and difficulty
+            disk.RefreshDisk();
+        }
+
+        Debug.Log($"Found and set up {disks.Length} disks in the current panel");
     }
 
     public void TogglePause()
@@ -62,11 +230,142 @@ public class UIManager : MonoBehaviour
 
     public void ShowFeedback(bool isCorrect)
     {
-        feedbackPanel.SetActive(true);
-        feedbackImage.sprite = isCorrect ? correctSprite : incorrectSprite;
-        CancelInvoke("HideFeedback");
-        Invoke("HideFeedback", 1.5f);
+        if (feedbackPanel != null)
+        {
+            feedbackPanel.SetActive(true);
+
+            // Find and update the feedback image
+            UnityEngine.UI.Image feedbackImage = feedbackPanel.GetComponent<UnityEngine.UI.Image>();
+            if (feedbackImage != null)
+            {
+                feedbackImage.sprite = isCorrect ? correctSprite : incorrectSprite;
+            }
+
+            // Hide feedback after a short delay
+            Invoke("HideFeedback", 1.0f);
+        }
     }
 
+    public void ShowGameOver(int finalScore, int highScore)
+    {
+        if (gameOverPanel != null)
+        {
+            HideAllPanels();
+            gameOverPanel.SetActive(true);
 
+            // Find and update score texts in the game over panel
+            TMPro.TextMeshProUGUI finalScoreText = gameOverPanel.transform.Find("final_score")?.GetComponent<TMPro.TextMeshProUGUI>();
+            TMPro.TextMeshProUGUI highScoreText = gameOverPanel.transform.Find("high_score")?.GetComponent<TMPro.TextMeshProUGUI>();
+
+            if (finalScoreText != null)
+                finalScoreText.text = "Score: " + finalScore;
+
+            if (highScoreText != null)
+                highScoreText.text = "High Score: " + highScore;
+        }
+    }
+
+    private void HideFeedback()
+    {
+        if (feedbackPanel != null)
+            feedbackPanel.SetActive(false);
+    }
+
+    private void HideAllPanels()
+    {
+        // Hide main menu panels
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (operationPickingPanel != null) operationPickingPanel.SetActive(false);
+        if (difficultyMenuPanel != null) difficultyMenuPanel.SetActive(false);
+
+        // Hide all game panels with standardized naming
+        if (gamePanel_Addition_Easy != null) gamePanel_Addition_Easy.SetActive(false);
+        if (gamePanel_Addition_Medium != null) gamePanel_Addition_Medium.SetActive(false);
+        if (gamePanel_Addition_Hard != null) gamePanel_Addition_Hard.SetActive(false);
+        if (gamePanel_Subtraction_Easy != null) gamePanel_Subtraction_Easy.SetActive(false);
+        if (gamePanel_Subtraction_Medium != null) gamePanel_Subtraction_Medium.SetActive(false);
+        if (gamePanel_Subtraction_Hard != null) gamePanel_Subtraction_Hard.SetActive(false);
+        if (gamePanel_Multiplication_Easy != null) gamePanel_Multiplication_Easy.SetActive(false);
+        if (gamePanel_Multiplication_Medium != null) gamePanel_Multiplication_Medium.SetActive(false);
+        if (gamePanel_Multiplication_Hard != null) gamePanel_Multiplication_Hard.SetActive(false);
+        if (gamePanel_Division_Easy != null) gamePanel_Division_Easy.SetActive(false);
+        if (gamePanel_Division_Medium != null) gamePanel_Division_Medium.SetActive(false);
+        if (gamePanel_Division_Hard != null) gamePanel_Division_Hard.SetActive(false);
+
+        // Hide utility panels
+        if (pausePanel != null) pausePanel.SetActive(false);
+        if (feedbackPanel != null) feedbackPanel.SetActive(false);
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+        // Note: We're NOT hiding the HUD here as it will be shared
+    }
+
+    // Button click handlers
+    public void OnStartButtonClicked()
+    {
+        ShowOperationMenu();
+    }
+
+    public void OnOperationButtonClicked(string operation)
+    {
+        SelectOperation(operation);
+    }
+
+    public void OnDifficultyButtonClicked(string difficulty)
+    {
+        SelectDifficulty(difficulty);
+    }
+
+    public void OnCheckAnswerButtonClicked()
+    {
+        if (GameManager.Instance != null)
+        {
+            // Check the answer
+            bool wasCorrect = GameManager.Instance.CheckAnswer();
+
+            // Show feedback
+            ShowFeedback(wasCorrect);
+        }
+    }
+
+    public void OnBackButtonClicked()
+    {
+        // Determine which panel is active and go back accordingly
+        if (operationPickingPanel.activeSelf)
+        {
+            ShowMainMenu();
+        }
+        else if (difficultyMenuPanel.activeSelf)
+        {
+            ShowOperationMenu();
+        }
+        else if (pausePanel.activeSelf)
+        {
+            TogglePause(); // Resume game
+        }
+        else
+        {
+            ShowMainMenu();
+        }
+    }
+
+    public void OnExitToMainMenu()
+    {
+        ShowMainMenu();
+    }
+
+    public void OnRestartButtonClicked()
+    {
+        // Restart current game with same operation and difficulty
+        StartGameWithCurrentSelections();
+    }
+
+    public void ToggleHUD(bool show)
+    {
+        GameObject hudObject = GameObject.Find("Canvas/HUD");
+        if (hudObject != null)
+        {
+            hudObject.SetActive(show);
+        }
+    }
 }

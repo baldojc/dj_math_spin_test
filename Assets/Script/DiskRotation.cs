@@ -2,36 +2,51 @@ using UnityEngine;
 
 public class DiskRotation : MonoBehaviour
 {
-    public GameManager gameManager;
     public bool isLeftDisk = true;
     private float currentRotation = 0f;
     private int[] numbers;
     private bool isDragging = false;
     private Vector2 lastInputPosition;
-
-    // For PC testing
-    public bool enableMouseInput = true;
-
-    // Rotation settings
-    public float rotationSpeed = 1.0f; // Adjust to control sensitivity
-    public float snapThreshold = 5.0f; // Degrees threshold for snapping
+    private GameManager gameManager;
 
     void Start()
     {
-        numbers = isLeftDisk ? new int[] { 3, 2, 8, 9, 7, 4 } : new int[] { 1, 6, 5, 2, 3, 9 };
+        // Get reference to the GameManager
+        gameManager = GameManager.Instance;
+
+        // Initialize with the correct numbers from GameManager
+        UpdateDiskNumbers();
+
+        // Set initial selected numbers
+        SelectCurrentNumber();
     }
 
     void Update()
     {
-        // Check for touch input first
+        // Check for touch input first (mobile)
         if (Input.touchCount > 0)
         {
             HandleTouch();
         }
-        // If no touch input and mouse input is enabled, handle mouse
-        else if (enableMouseInput)
+        // Check for mouse input (PC)
+        else
         {
             HandleMouse();
+        }
+    }
+
+    // Update disk numbers when operation or difficulty changes
+    public void UpdateDiskNumbers()
+    {
+        if (gameManager != null)
+        {
+            numbers = gameManager.GetDiskNumbers(isLeftDisk);
+        }
+        else
+        {
+            Debug.LogError("GameManager reference not found!");
+            // Fallback numbers
+            numbers = isLeftDisk ? new int[] { 1, 2, 3, 4, 5, 6 } : new int[] { 1, 2, 3, 4, 5, 6 };
         }
     }
 
@@ -52,13 +67,15 @@ public class DiskRotation : MonoBehaviour
             case TouchPhase.Moved:
                 if (isDragging)
                 {
-                    RotateDiskCircular(touchWorldPos);
+                    Vector2 currentTouchPos = touchWorldPos;
+                    RotateDiskCircular(lastInputPosition, currentTouchPos);
+                    lastInputPosition = currentTouchPos;
                 }
                 break;
             case TouchPhase.Ended:
             case TouchPhase.Canceled:
                 isDragging = false;
-                SnapToNearest();
+                SelectCurrentNumber();
                 break;
         }
     }
@@ -67,6 +84,7 @@ public class DiskRotation : MonoBehaviour
     {
         Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
+        // Mouse button down (equivalent to touch began)
         if (Input.GetMouseButtonDown(0))
         {
             if (IsTouchOnThisDisk(mouseWorldPos))
@@ -75,97 +93,61 @@ public class DiskRotation : MonoBehaviour
                 lastInputPosition = mouseWorldPos;
             }
         }
+        // Mouse drag (equivalent to touch moved)
         else if (Input.GetMouseButton(0))
         {
             if (isDragging)
             {
-                RotateDiskCircular(mouseWorldPos);
+                Vector2 currentMousePos = mouseWorldPos;
+                RotateDiskCircular(lastInputPosition, currentMousePos);
+                lastInputPosition = currentMousePos;
             }
         }
+        // Mouse button up (equivalent to touch ended)
         else if (Input.GetMouseButtonUp(0))
         {
             isDragging = false;
-            SnapToNearest();
+            SelectCurrentNumber();
         }
     }
 
-    bool IsTouchOnThisDisk(Vector2 touchPos)
+    bool IsTouchOnThisDisk(Vector2 inputPos)
     {
         Collider2D col = GetComponent<Collider2D>();
-        return col != null && col.OverlapPoint(touchPos);
+        return col != null && col.OverlapPoint(inputPos);
     }
 
-    void RotateDiskCircular(Vector2 currentPos)
+    void RotateDiskCircular(Vector2 lastPos, Vector2 currentPos)
     {
         Vector2 center = transform.position;
-
-        // Calculate vectors from center to touch positions
-        Vector2 previousVector = lastInputPosition - center;
-        Vector2 currentVector = currentPos - center;
-
-        // Skip if touch too close to center to avoid erratic behavior
-        if (previousVector.magnitude < 0.1f || currentVector.magnitude < 0.1f)
-            return;
-
-        // Calculate the angle between the vectors
-        float angle = Vector2.SignedAngle(previousVector, currentVector);
-
-        // Apply rotation based on angle and sensitivity
-        currentRotation += angle * rotationSpeed;
+        Vector2 from = lastPos - center;
+        Vector2 to = currentPos - center;
+        float angle = Vector2.SignedAngle(from, to);
+        currentRotation += angle;
         transform.rotation = Quaternion.Euler(0, 0, currentRotation);
-
-        // Update game manager with the current number
-        UpdateSelectedNumber();
-
-        // Update last position for next frame
-        lastInputPosition = currentPos;
     }
 
-    void UpdateSelectedNumber()
+    // Select the number based on current rotation
+    void SelectCurrentNumber()
     {
-        // Calculate which number is currently at the "top" position
-        float singleSectionAngle = 360f / numbers.Length;
-        int selectedIndex = Mathf.FloorToInt(((currentRotation % 360) + 360) % 360 / singleSectionAngle);
-        selectedIndex = (numbers.Length - selectedIndex) % numbers.Length;
+        if (gameManager == null || numbers == null || numbers.Length == 0)
+            return;
 
-        // Update the game manager
+        // Calculate which number is currently at the top position
+        int selectedIndex = Mathf.RoundToInt((360f - currentRotation) / (360f / numbers.Length)) % numbers.Length;
+        selectedIndex = (selectedIndex + numbers.Length) % numbers.Length;
+
+        // Update the selected number in GameManager
         if (isLeftDisk)
             gameManager.UpdateLeftNumber(numbers[selectedIndex]);
         else
             gameManager.UpdateRightNumber(numbers[selectedIndex]);
     }
 
-    void SnapToNearest()
+    // Add this method to simplify updating for changes in operation/difficulty
+    public void RefreshDisk()
     {
-        // Calculate the angle of a single section
-        float singleSectionAngle = 360f / numbers.Length;
-
-        // Calculate how far we are from the nearest snap point
-        float normalizedRotation = ((currentRotation % 360) + 360) % 360;
-        float targetRotation = Mathf.Round(normalizedRotation / singleSectionAngle) * singleSectionAngle;
-
-        // Snap to the nearest position if we're close enough
-        if (Mathf.Abs(normalizedRotation - targetRotation) < snapThreshold)
-        {
-            currentRotation = targetRotation + (currentRotation - normalizedRotation);
-            transform.rotation = Quaternion.Euler(0, 0, currentRotation);
-            UpdateSelectedNumber();
-        }
-    }
-
-    // Optional: Add visual feedback for testing
-    void OnDrawGizmos()
-    {
-        if (Application.isPlaying && isDragging)
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(transform.position, 0.5f);
-
-            // Draw lines to represent the current selection
-            float singleSectionAngle = 360f / (numbers != null ? numbers.Length : 6);
-            Vector3 direction = Quaternion.Euler(0, 0, -currentRotation) * Vector3.up;
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(transform.position, direction);
-        }
+        UpdateDiskNumbers();
+        SelectCurrentNumber();
     }
 }
