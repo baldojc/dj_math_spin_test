@@ -41,8 +41,11 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: New Layer 1
+  - name: Disk
     uniqueID: 2843518903
+    locked: 0
+  - name: New Layer 2
+    uniqueID: 2795791127
     locked: 0
   m_RenderingLayers:
   - Default
