@@ -35,6 +35,11 @@ public class GameManager : MonoBehaviour
     public Sprite multiplySprite;
     public Sprite divideSprite;
 
+    public TextMeshProUGUI timerText;
+    public float gameTime = 60f; // 60 seconds by default
+    private float currentTime;
+    private bool timerActive = false;
+
     private Dictionary<string, Sprite> operatorSprites;
 
     // Dictionary for disk number arrays
@@ -51,23 +56,33 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Find UI references in the shared HUD
-        Canvas canvas = FindObjectOfType<Canvas>();
-        if (canvas != null)
+        // Find UI references in the shared HUD more reliably
+        Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+        foreach (Canvas canvas in canvases)
         {
             Transform hud = canvas.transform.Find("HUD");
             if (hud != null)
             {
-                targetNumberText = hud.Find("target_number").GetComponent<TextMeshProUGUI>();
-                scoreText = hud.Find("score").GetComponent<TextMeshProUGUI>();
-                selectedNumbersText = hud.Find("selected_number").GetComponent<TextMeshProUGUI>();
-                operatorImage = hud.Find("OperatorImage").GetComponent<Image>();
+                Debug.Log("Found HUD in canvas: " + canvas.name);
+                targetNumberText = hud.Find("target_number")?.GetComponent<TextMeshProUGUI>();
+                scoreText = hud.Find("score")?.GetComponent<TextMeshProUGUI>();
+                selectedNumbersText = hud.Find("selected_number")?.GetComponent<TextMeshProUGUI>();
+                operatorImage = hud.Find("OperatorImage")?.GetComponent<Image>();
+                timerText = hud.Find("timer")?.GetComponent<TextMeshProUGUI>();
+
+                // Add these checks to ensure references are found
+                if (targetNumberText == null) Debug.LogError("target_number not found or missing TextMeshProUGUI component");
+                if (scoreText == null) Debug.LogError("score not found or missing TextMeshProUGUI component");
+                if (selectedNumbersText == null) Debug.LogError("selected_number not found or missing TextMeshProUGUI component");
+                if (operatorImage == null) Debug.LogError("OperatorImage not found or missing Image component");
+                if (timerText == null) Debug.LogError("timer not found or missing TextMeshProUGUI component");
+
+                break;
             }
         }
 
         InitializeDiskNumbers();
     }
-
 
     private void Start()
     {
@@ -76,16 +91,34 @@ public class GameManager : MonoBehaviour
 
         // Initialize sprite dictionary
         operatorSprites = new Dictionary<string, Sprite>()
-    {
-        { "+", plusSprite },
-        { "-", minusSprite },
-        { "*", multiplySprite },
-        { "/", divideSprite }
-    };
+        {
+            { "+", plusSprite },
+            { "-", minusSprite },
+            { "*", multiplySprite },
+            { "/", divideSprite }
+        };
 
         // Initial game setup
         GenerateTargetNumber();
+
+        // Initialize the timer
+        InitializeTimer();
     }
+
+    private void Update()
+    {
+        if (timerActive && currentTime > 0)
+        {
+            currentTime -= Time.deltaTime;
+            UpdateTimerUI();
+
+            if (currentTime <= 0)
+            {
+                GameOver();
+            }
+        }
+    }
+
     #region Game Flow
 
     public void SetDifficulty(Difficulty difficulty)
@@ -94,6 +127,7 @@ public class GameManager : MonoBehaviour
         score = 0;
         UpdateScoreUI();
         GenerateTargetNumber();
+        ResetTimer(); // Reset timer when difficulty changes
     }
 
     public void SetOperation(Operation operation)
@@ -111,6 +145,7 @@ public class GameManager : MonoBehaviour
 
         UpdateOperatorImage();
         GenerateTargetNumber();
+        ResetTimer(); // Reset timer when operation changes
     }
 
     private void InitializeDiskNumbers()
@@ -335,7 +370,22 @@ public class GameManager : MonoBehaviour
             case "*": result = LeftSelectedNumber * RightSelectedNumber; break;
             case "/":
                 if (RightSelectedNumber != 0)
+                {
+                    // For division, check if the result is close enough to account for floating point errors
+                    float exactResult = (float)LeftSelectedNumber / RightSelectedNumber;
                     result = LeftSelectedNumber / RightSelectedNumber;
+
+                    // Check if it's a whole number result or within a small tolerance
+                    if (Mathf.Approximately(exactResult, result))
+                    {
+                        isCorrect = true;
+                    }
+                }
+                else
+                {
+                    // Handle division by zero case
+                    Debug.LogWarning("Division by zero attempted");
+                }
                 break;
         }
 
@@ -362,9 +412,85 @@ public class GameManager : MonoBehaviour
         // Return whether the answer was correct for UI feedback
         return isCorrect;
     }
+
     private void UpdateScoreUI()
     {
         scoreText.text = "Score: " + score;
+    }
+
+    #endregion
+
+    #region Timer Functions
+
+    public void InitializeTimer()
+    {
+        // Try to find the timer text if it hasn't been set yet
+        if (timerText == null)
+        {
+            Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+            foreach (Canvas canvas in canvases)
+            {
+                Transform hud = canvas.transform.Find("HUD");
+                if (hud != null)
+                {
+                    timerText = hud.Find("timer")?.GetComponent<TextMeshProUGUI>();
+                    if (timerText == null) Debug.LogError("timer not found or missing TextMeshProUGUI component");
+                    break;
+                }
+            }
+        }
+
+        ResetTimer();
+    }
+
+    private void UpdateTimerUI()
+    {
+        if (timerText != null)
+        {
+            int seconds = Mathf.FloorToInt(currentTime);
+            timerText.text = seconds.ToString();
+        }
+    }
+
+    public void ResetTimer()
+    {
+        currentTime = gameTime;
+        UpdateTimerUI();
+        timerActive = true;
+        Debug.Log("Timer reset to " + gameTime + " seconds");
+    }
+
+    public void PauseTimer()
+    {
+        timerActive = false;
+        Debug.Log("Timer paused");
+    }
+
+    public void ResumeTimer()
+    {
+        timerActive = true;
+        Debug.Log("Timer resumed");
+    }
+
+    private void GameOver()
+    {
+        timerActive = false;
+        Debug.Log("Game over! Final score: " + score);
+
+        // Save high score
+        int highScore = PlayerPrefs.GetInt("HighScore", 0);
+        if (score > highScore)
+        {
+            PlayerPrefs.SetInt("HighScore", score);
+            PlayerPrefs.Save();
+            Debug.Log("New high score: " + score);
+        }
+
+        // Show game over screen
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ShowGameOver(score, PlayerPrefs.GetInt("HighScore", 0));
+        }
     }
 
     #endregion

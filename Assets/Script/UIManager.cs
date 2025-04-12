@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
@@ -135,8 +136,9 @@ public class UIManager : MonoBehaviour
     {
         HideAllPanels();
 
-        // Show the HUD for gameplay
+        // Show the HUD for gameplay - make sure this runs properly
         ToggleHUD(true);
+        Debug.Log("Attempting to show HUD for gameplay");
 
         // Activate the specific game panel based on current selections
         currentGamePanel = GetGamePanelForOperationAndDifficulty(currentOperationStr, currentDifficultyStr);
@@ -144,6 +146,7 @@ public class UIManager : MonoBehaviour
         if (currentGamePanel != null)
         {
             currentGamePanel.SetActive(true);
+            Debug.Log($"Activated game panel: {currentGamePanel.name}");
 
             // Find and initialize the disks in the current panel
             SetupDisksInCurrentPanel();
@@ -159,7 +162,7 @@ public class UIManager : MonoBehaviour
             Debug.LogError($"Game panel not found for operation: {currentOperationStr}, difficulty: {currentDifficultyStr}");
         }
     }
-
+   
     private GameObject GetGamePanelForOperationAndDifficulty(string operation, string difficulty)
     {
         // Standardized approach to get the correct panel
@@ -221,13 +224,22 @@ public class UIManager : MonoBehaviour
         Debug.Log($"Found and set up {disks.Length} disks in the current panel");
     }
 
+    // In UIManager.cs, update the TogglePause method:
     public void TogglePause()
     {
         bool isPaused = pausePanel.activeSelf;
         pausePanel.SetActive(!isPaused);
         Time.timeScale = isPaused ? 1 : 0;
-    }
 
+        // Add these lines:
+        if (GameManager.Instance != null)
+        {
+            if (isPaused)
+                GameManager.Instance.ResumeTimer();
+            else
+                GameManager.Instance.PauseTimer();
+        }
+    }
     public void ShowFeedback(bool isCorrect)
     {
         if (feedbackPanel != null)
@@ -251,6 +263,10 @@ public class UIManager : MonoBehaviour
         if (gameOverPanel != null)
         {
             HideAllPanels();
+
+            // Explicitly hide the HUD when showing game over panel
+            ToggleHUD(false);
+
             gameOverPanel.SetActive(true);
 
             // Find and update score texts in the game over panel
@@ -264,7 +280,6 @@ public class UIManager : MonoBehaviour
                 highScoreText.text = "High Score: " + highScore;
         }
     }
-
     private void HideFeedback()
     {
         if (feedbackPanel != null)
@@ -362,10 +377,19 @@ public class UIManager : MonoBehaviour
 
     public void ToggleHUD(bool show)
     {
-        GameObject hudObject = GameObject.Find("Canvas/HUD");
-        if (hudObject != null)
+        Canvas mainCanvas = FindObjectOfType<Canvas>();
+        if (mainCanvas != null)
         {
-            hudObject.SetActive(show);
+            Transform hudTransform = mainCanvas.transform.Find("HUD");
+            if (hudTransform != null)
+            {
+                hudTransform.gameObject.SetActive(show);
+                Debug.Log("HUD visibility set to: " + show);
+            }
+            else
+            {
+                Debug.LogError("HUD object not found in the scene hierarchy!");
+            }
         }
     }
 }
