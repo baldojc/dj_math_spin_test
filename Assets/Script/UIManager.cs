@@ -244,14 +244,16 @@ public class UIManager : MonoBehaviour
     {
         if (feedbackPanel != null)
         {
+            // Activate the feedback panel
             feedbackPanel.SetActive(true);
 
-            // Find and update the feedback image
-            UnityEngine.UI.Image feedbackImage = feedbackPanel.GetComponent<UnityEngine.UI.Image>();
-            if (feedbackImage != null)
-            {
-                feedbackImage.sprite = isCorrect ? correctSprite : incorrectSprite;
-            }
+            // Find child images
+            Transform correctImage = feedbackPanel.transform.Find("correct");
+            Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
+
+            // Show the appropriate image based on the result
+            if (correctImage != null) correctImage.gameObject.SetActive(isCorrect);
+            if (incorrectImage != null) incorrectImage.gameObject.SetActive(!isCorrect);
 
             // Hide feedback after a short delay
             Invoke("HideFeedback", 1.0f);

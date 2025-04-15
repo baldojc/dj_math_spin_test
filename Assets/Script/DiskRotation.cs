@@ -8,7 +8,7 @@ public class DiskRotation : MonoBehaviour
     private bool isDragging = false;
     private Vector2 lastInputPosition;
     private GameManager gameManager;
-    
+
     void Start()
     {
         // Get reference to the GameManager
