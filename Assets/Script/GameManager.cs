@@ -486,7 +486,6 @@ public class GameManager : MonoBehaviour
             Debug.Log("New high score: " + score);
         }
 
-        // Show game over screen
         if (UIManager.Instance != null)
         {
             UIManager.Instance.ShowGameOver(score, PlayerPrefs.GetInt("HighScore", 0));

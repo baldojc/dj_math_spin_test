@@ -14,10 +14,8 @@ public class DiskRotation : MonoBehaviour
         // Get reference to the GameManager
         gameManager = GameManager.Instance;
 
-        // Initialize with the correct numbers from GameManager
         UpdateDiskNumbers();
 
-        // Set initial selected numbers
         SelectCurrentNumber();
     }
 
@@ -28,7 +26,6 @@ public class DiskRotation : MonoBehaviour
         {
             HandleTouch();
         }
-        // Check for mouse input (PC)
         else
         {
             HandleMouse();
