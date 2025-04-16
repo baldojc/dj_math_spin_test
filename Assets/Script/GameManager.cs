@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI timerText;
     public float gameTime = 60f; // 60 seconds by default
     private float currentTime;
-    private bool timerActive = false;
+    public bool timerActive = false;
 
     private Dictionary<string, Sprite> operatorSprites;
 

@@ -103,12 +103,12 @@ public class UIManager : MonoBehaviour
         {
             GameManager.Instance.SetOperation(operation);
             GameManager.Instance.SetDifficulty(difficulty);
+            // SetDifficulty already resets the timer and generates a new target number
         }
 
         // Start the game
         StartGame();
     }
-
     private GameManager.Operation GetOperationFromString(string operationStr)
     {
         switch (operationStr.ToLower())
@@ -136,7 +136,7 @@ public class UIManager : MonoBehaviour
     {
         HideAllPanels();
 
-        // Show the HUD for gameplay - make sure this runs properly
+        // Show the HUD for gameplay
         ToggleHUD(true);
         Debug.Log("Attempting to show HUD for gameplay");
 
@@ -151,10 +151,12 @@ public class UIManager : MonoBehaviour
             // Find and initialize the disks in the current panel
             SetupDisksInCurrentPanel();
 
-            // Generate a new target number
-            if (GameManager.Instance != null)
+            // Ensure GameManager is properly initialized but don't regenerate numbers
+            // unless we're coming from a clean start
+            if (GameManager.Instance != null && !GameManager.Instance.timerActive)
             {
                 GameManager.Instance.GenerateTargetNumber();
+                GameManager.Instance.ResetTimer();
             }
         }
         else
@@ -162,7 +164,7 @@ public class UIManager : MonoBehaviour
             Debug.LogError($"Game panel not found for operation: {currentOperationStr}, difficulty: {currentDifficultyStr}");
         }
     }
-   
+
     private GameObject GetGamePanelForOperationAndDifficulty(string operation, string difficulty)
     {
         // Standardized approach to get the correct panel
@@ -368,6 +370,10 @@ public class UIManager : MonoBehaviour
 
     public void OnExitToMainMenu()
     {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.PauseTimer();
+        }
         ShowMainMenu();
     }
 
@@ -375,8 +381,14 @@ public class UIManager : MonoBehaviour
     {
         // Restart current game with same operation and difficulty
         StartGameWithCurrentSelections();
-    }
 
+        // Ensure the timer is reset and running
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ResetTimer();
+            GameManager.Instance.ResumeTimer();
+        }
+    }
     public void ToggleHUD(bool show)
     {
         Canvas mainCanvas = FindObjectOfType<Canvas>();

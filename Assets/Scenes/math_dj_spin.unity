@@ -8174,7 +8174,7 @@ MonoBehaviour:
   m_Intensity: 1
   m_LightVolumeIntensity: 1
   m_LightVolumeEnabled: 0
-  m_ApplyToSortingLayers: 00000000b7a77ca91763a4a6
+  m_ApplyToSortingLayers: 00000000b7a77ca91763a4a6cdf4a42d
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -13205,6 +13205,7 @@ MonoBehaviour:
   divideSprite: {fileID: 6937817954938267909, guid: e1052789c41a06f4999f2497bd87b71f, type: 3}
   timerText: {fileID: 0}
   gameTime: 60
+  timerActive: 0
 --- !u!1 &991735296
 GameObject:
   m_ObjectHideFlags: 0
@@ -29003,7 +29004,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 0
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 519420031}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
