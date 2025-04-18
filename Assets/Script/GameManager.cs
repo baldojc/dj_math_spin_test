@@ -42,10 +42,10 @@ public class GameManager : MonoBehaviour
 
     private Dictionary<string, Sprite> operatorSprites;
 
-
+    // Dictionary for disk number arrays
     private Dictionary<string, int[][]> diskNumbersMap;
 
- 
+    // In GameManager.Awake() after setting Instance
     void Awake()
     {
         if (Instance == null)
@@ -98,10 +98,10 @@ public class GameManager : MonoBehaviour
             { "/", divideSprite }
         };
 
-      
+        // Initial game setup
         GenerateTargetNumber();
 
-       
+        // Initialize the timer
         InitializeTimer();
     }
 
@@ -127,14 +127,13 @@ public class GameManager : MonoBehaviour
         score = 0;
         UpdateScoreUI();
         GenerateTargetNumber();
-        ResetTimer(); // Reset timer when difficulty changes
+        ResetTimer(); 
     }
 
     public void SetOperation(Operation operation)
     {
         currentOperation = operation;
 
-        // Update the operator symbol
         switch (operation)
         {
             case Operation.Addition: currentOperator = "+"; break;
@@ -152,14 +151,13 @@ public class GameManager : MonoBehaviour
     {
         diskNumbersMap = new Dictionary<string, int[][]>();
 
-      
+        // Addition Easy (sums up to 12) 
         diskNumbersMap["addition_easy"] = new int[][]
         {
             new int[] { 1, 2, 3, 4, 5, 6 },       // Left disk 
             new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk 
         };
 
-        
         diskNumbersMap["addition_medium"] = new int[][]
         {
             new int[] { 5, 6, 7, 8, 9, 10 },      // Left disk 
@@ -172,42 +170,36 @@ public class GameManager : MonoBehaviour
             new int[] { 5, 7, 9, 10, 11, 13 }     // Right disk 
         };
 
-        // Subtraction Easy (always ensures left > right) 
         diskNumbersMap["subtraction_easy"] = new int[][]
         {
             new int[] { 6, 7, 8, 9, 10, 12 },     // Left disk (larger numbers) 
             new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk (smaller numbers) 
         };
 
-     
         diskNumbersMap["subtraction_medium"] = new int[][]
         {
             new int[] { 10, 12, 14, 16, 18, 20 }, // Left disk 
             new int[] { 2, 4, 6, 8, 10, 12 }      // Right disk 
         };
 
-       
         diskNumbersMap["subtraction_hard"] = new int[][]
         {
             new int[] { 15, 18, 20, 25, 30, 35 }, // Left disk 
             new int[] { 5, 8, 10, 12, 15, 18 }    // Right disk 
         };
 
-      
         diskNumbersMap["multiplication_easy"] = new int[][]
         {
             new int[] { 1, 2, 3, 4, 5, 6 },       // Left disk 
             new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk 
         };
 
-         
         diskNumbersMap["multiplication_medium"] = new int[][]
         {
             new int[] { 2, 3, 4, 5, 6, 7 },       // Left disk 
             new int[] { 2, 3, 4, 5, 6, 7 }        // Right disk 
         };
 
-       
         diskNumbersMap["multiplication_hard"] = new int[][]
         {
             new int[] { 5, 6, 7, 8, 9, 10 },      // Left disk 
