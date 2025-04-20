@@ -1,6 +1,8 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using UnityEngine.UI;
+
 
 public class UIManager : MonoBehaviour
 {
@@ -246,18 +248,31 @@ public class UIManager : MonoBehaviour
     {
         if (feedbackPanel != null)
         {
-            // Activate the feedback panel
             feedbackPanel.SetActive(true);
 
-            // Find child images
-            Transform correctImage = feedbackPanel.transform.Find("correct");
-            Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
 
-            // Show the appropriate image based on the result
-            if (correctImage != null) correctImage.gameObject.SetActive(isCorrect);
-            if (incorrectImage != null) incorrectImage.gameObject.SetActive(!isCorrect);
 
-            // Hide feedback after a short delay
+            if (isCorrect)
+            {
+                Transform correctImage = feedbackPanel.transform.Find("correct");
+                Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
+                correctImage.gameObject.SetActive(true);
+                incorrectImage.gameObject.SetActive(false);
+                AudioManager.Instance.PlaySound("Correct");
+                // DJ-style layered sounds
+                AudioManager.Instance.PlaySound("Cheer", pitch: Random.Range(0.95f, 1.05f));
+            }
+            else
+            {
+                Transform correctImage = feedbackPanel.transform.Find("correct");
+                Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
+                correctImage.gameObject.SetActive(false);
+                incorrectImage.gameObject.SetActive(true);
+                AudioManager.Instance.PlaySound("Incorrect");
+                // Classic DJ scratch sound
+                AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
+            }
+
             Invoke("HideFeedback", 1.0f);
         }
     }
