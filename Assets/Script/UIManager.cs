@@ -236,7 +236,6 @@ public class UIManager : MonoBehaviour
         Debug.Log($"Found and set up {disks.Length} disks in the current panel");
     }
 
-    // In UIManager.cs, update the TogglePause method:
     public void TogglePause()
     {
         bool isPaused = pausePanel.activeSelf;
@@ -267,7 +266,6 @@ public class UIManager : MonoBehaviour
                 correctImage.gameObject.SetActive(true);
                 incorrectImage.gameObject.SetActive(false);
                 AudioManager.Instance.PlaySound("Correct");
-                // DJ-style layered sounds
                 AudioManager.Instance.PlaySound("Cheer", pitch: Random.Range(0.95f, 1.05f));
             }
             else
@@ -277,7 +275,6 @@ public class UIManager : MonoBehaviour
                 correctImage.gameObject.SetActive(false);
                 incorrectImage.gameObject.SetActive(true);
                 AudioManager.Instance.PlaySound("Incorrect");
-                // Classic DJ scratch sound
                 AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
             }
 
@@ -291,7 +288,6 @@ public class UIManager : MonoBehaviour
         {
             HideAllPanels();
 
-            // Explicitly hide the HUD when showing game over panel
             ToggleHUD(false);
 
             gameOverPanel.SetActive(true);
@@ -315,12 +311,10 @@ public class UIManager : MonoBehaviour
 
     private void HideAllPanels()
     {
-        // Hide main menu panels
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (operationPickingPanel != null) operationPickingPanel.SetActive(false);
         if (difficultyMenuPanel != null) difficultyMenuPanel.SetActive(false);
 
-        // Hide all game panels with standardized naming
         if (gamePanel_Addition_Easy != null) gamePanel_Addition_Easy.SetActive(false);
         if (gamePanel_Addition_Medium != null) gamePanel_Addition_Medium.SetActive(false);
         if (gamePanel_Addition_Hard != null) gamePanel_Addition_Hard.SetActive(false);
@@ -334,12 +328,10 @@ public class UIManager : MonoBehaviour
         if (gamePanel_Division_Medium != null) gamePanel_Division_Medium.SetActive(false);
         if (gamePanel_Division_Hard != null) gamePanel_Division_Hard.SetActive(false);
 
-        // Hide utility panels
         if (pausePanel != null) pausePanel.SetActive(false);
         if (feedbackPanel != null) feedbackPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
 
-        // Note: We're NOT hiding the HUD here as it will be shared
     }
 
     // Button click handlers

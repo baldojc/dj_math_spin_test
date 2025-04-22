@@ -63,7 +63,6 @@ public class AudioManager : MonoBehaviour
         musicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
         globalVolume = PlayerPrefs.GetFloat("GlobalVolume", 1f);
 
-        // Start with menu music by default
         PlayMenuMusic();
     }
 
