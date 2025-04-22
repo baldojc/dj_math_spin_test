@@ -356,51 +356,51 @@ public class GameManager : MonoBehaviour
 
         switch (currentOperator)
         {
-            case "+": result = LeftSelectedNumber + RightSelectedNumber; break;
-            case "-": result = LeftSelectedNumber - RightSelectedNumber; break;
-            case "*": result = LeftSelectedNumber * RightSelectedNumber; break;
+            case "+":
+                result = LeftSelectedNumber + RightSelectedNumber;
+                isCorrect = (result == targetNumber);
+                break;
+            case "-":
+                result = LeftSelectedNumber - RightSelectedNumber;
+                isCorrect = (result == targetNumber);
+                break;
+            case "*":
+                result = LeftSelectedNumber * RightSelectedNumber;
+                isCorrect = (result == targetNumber);
+                break;
             case "/":
                 if (RightSelectedNumber != 0)
                 {
-                    // For division, check if the result is close enough to account for floating point errors
-                    float exactResult = (float)LeftSelectedNumber / RightSelectedNumber;
-                    result = LeftSelectedNumber / RightSelectedNumber;
-
-                    // Check if it's a whole number result or within a small tolerance
-                    if (Mathf.Approximately(exactResult, result))
+                    // For division, we only want exact integer divisions
+                    if (LeftSelectedNumber % RightSelectedNumber == 0)
                     {
-                        isCorrect = true;
+                        result = LeftSelectedNumber / RightSelectedNumber;
+                        isCorrect = (result == targetNumber);
                     }
-                }
-                else
-                {
-                    // Handle division by zero case
-                    Debug.LogWarning("Division by zero attempted");
                 }
                 break;
         }
 
-        if (result == targetNumber)
+        if (isCorrect)
         {
-            isCorrect = true;
             score += 10;
             UpdateScoreUI();
 
-            // Play correct sound
-            if (correctSound != null)
-                correctSound.Play();
+            // Play correct sound with AudioManager
+            AudioManager.Instance.PlaySound("Correct");
+            // Optional: Add random pitch variation for DJ effect
+            AudioManager.Instance.PlaySound("Correct", pitch: Random.Range(0.95f, 1.05f));
 
-            // Generate a new target number
             GenerateTargetNumber();
         }
         else
         {
-            // Play incorrect sound
-            if (incorrectSound != null)
-                incorrectSound.Play();
+            // Play incorrect sound with AudioManager
+            AudioManager.Instance.PlaySound("Incorrect");
+            // Optional: Add record scratch sound
+            AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
         }
 
-        // Return whether the answer was correct for UI feedback
         return isCorrect;
     }
 

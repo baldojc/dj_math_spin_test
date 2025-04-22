@@ -148,4 +148,14 @@ public class DiskRotation : MonoBehaviour
         SelectCurrentNumber();
     }
 
+    public void ResetDiskPosition()
+    {
+        // Reset rotation to the initial state
+        currentRotation = 0f;
+        transform.rotation = Quaternion.Euler(0, 0, 0);
+
+        // Make sure the number selection is updated
+        SelectCurrentNumber();
+    }
+
 }

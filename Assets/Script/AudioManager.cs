@@ -16,16 +16,16 @@ public class AudioManager : MonoBehaviour
         [HideInInspector] public AudioSource source;
     }
 
-    [Header("Music Settings")]
-    public AudioClip musicClip;
+    public AudioClip menuMusic; // For Start_Menu, OperatorPicker, Difficulty panels
+    public AudioClip gameplayMusic; // For all gamePanel_* scenes
     [Range(0f, 1f)] public float musicVolume = 0.6f;
-    private AudioSource musicSource;
 
-    [Header("Sound Effects")]
     public List<Sound> sounds = new List<Sound>();
 
+    private AudioSource musicSource;
     private float globalVolume = 1f;
     private bool musicEnabled = true;
+    private AudioClip currentMusicClip;
 
     void Awake()
     {
@@ -45,9 +45,8 @@ public class AudioManager : MonoBehaviour
     {
         // Set up music source
         musicSource = gameObject.AddComponent<AudioSource>();
-        musicSource.clip = musicClip;
-        musicSource.volume = musicVolume * globalVolume;
         musicSource.loop = true;
+        musicSource.volume = musicVolume * globalVolume;
 
         // Set up sound effect sources
         foreach (Sound s in sounds)
@@ -64,24 +63,33 @@ public class AudioManager : MonoBehaviour
         musicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
         globalVolume = PlayerPrefs.GetFloat("GlobalVolume", 1f);
 
-        if (musicEnabled) PlayMusic();
+        // Start with menu music by default
+        PlayMenuMusic();
     }
 
-    #region Music Controls
-    public void PlayMusic()
+    #region Music Control
+    public void PlayMenuMusic()
     {
-        if (musicSource != null && !musicSource.isPlaying)
-        {
-            musicSource.Play();
-        }
+        if (!musicEnabled || currentMusicClip == menuMusic) return;
+
+        currentMusicClip = menuMusic;
+        musicSource.clip = menuMusic;
+        musicSource.Play();
+    }
+
+    public void PlayGameplayMusic()
+    {
+        if (!musicEnabled || currentMusicClip == gameplayMusic) return;
+
+        currentMusicClip = gameplayMusic;
+        musicSource.clip = gameplayMusic;
+        musicSource.Play();
     }
 
     public void StopMusic()
     {
-        if (musicSource != null)
-        {
-            musicSource.Stop();
-        }
+        musicSource.Stop();
+        currentMusicClip = null;
     }
 
     public void ToggleMusic()
@@ -89,77 +97,42 @@ public class AudioManager : MonoBehaviour
         musicEnabled = !musicEnabled;
         PlayerPrefs.SetInt("MusicEnabled", musicEnabled ? 1 : 0);
 
-        if (musicEnabled) PlayMusic();
-        else StopMusic();
+        if (musicEnabled)
+        {
+            // Resume current music type
+            if (currentMusicClip == menuMusic) PlayMenuMusic();
+            else if (currentMusicClip == gameplayMusic) PlayGameplayMusic();
+        }
+        else
+        {
+            StopMusic();
+        }
     }
 
     public void SetMusicVolume(float volume)
     {
         musicVolume = Mathf.Clamp01(volume);
-        if (musicSource != null)
-        {
-            musicSource.volume = musicVolume * globalVolume;
-        }
+        musicSource.volume = musicVolume * globalVolume;
         PlayerPrefs.SetFloat("MusicVolume", musicVolume);
-    }
-
-    public float GetMusicVolume()
-    {
-        return musicVolume;
-    }
-
-    public bool IsMusicEnabled()
-    {
-        return musicEnabled;
     }
     #endregion
 
     #region Sound Effects
-    public void PlaySound(string soundName, float pitch = 1f)
+    public void PlaySound(string soundName, float pitch = 1f, float volume = 1f, float delay = 0f)
     {
         Sound s = sounds.Find(sound => sound.name == soundName);
         if (s == null)
         {
-            Debug.LogWarning("Sound: " + soundName + " not found!");
+            Debug.LogWarning("Sound not found: " + soundName);
             return;
         }
 
         s.source.pitch = pitch;
-        s.source.Play();
-    }
-
-    public void StopSound(string soundName)
-    {
-        Sound s = sounds.Find(sound => sound.name == soundName);
-        if (s == null)
-        {
-            Debug.LogWarning("Sound: " + soundName + " not found!");
-            return;
-        }
-
-        s.source.Stop();
-    }
-    #endregion
-
-    #region Global Controls
-    public void SetGlobalVolume(float volume)
-    {
-        globalVolume = Mathf.Clamp01(volume);
-        UpdateAllVolumes();
-        PlayerPrefs.SetFloat("GlobalVolume", globalVolume);
-    }
-
-    private void UpdateAllVolumes()
-    {
-        if (musicSource != null)
-        {
-            musicSource.volume = musicVolume * globalVolume;
-        }
-
-        foreach (Sound s in sounds)
-        {
-            s.source.volume = s.volume * globalVolume;
-        }
+        s.source.volume = volume * globalVolume;
+        if (delay > 0)
+            s.source.PlayDelayed(delay);
+        else
+            s.source.Play();
     }
     #endregion
 

@@ -64,6 +64,9 @@ public class UIManager : MonoBehaviour
 
     public void ShowMainMenu()
     {
+        AudioManager.Instance.PlayMenuMusic();
+
+
         HideAllPanels();
         ToggleHUD(false); // Hide the HUD in main menu
         mainMenuPanel.SetActive(true);
@@ -135,7 +138,10 @@ public class UIManager : MonoBehaviour
     }
 
     public void StartGame()
+
     {
+        AudioManager.Instance.PlayGameplayMusic();
+
         HideAllPanels();
 
         // Show the HUD for gameplay
@@ -221,6 +227,8 @@ public class UIManager : MonoBehaviour
 
         foreach (DiskRotation disk in disks)
         {
+            // Reset disk position
+            disk.ResetDiskPosition();
             // Refresh the disk numbers based on current operation and difficulty
             disk.RefreshDisk();
         }
@@ -394,6 +402,13 @@ public class UIManager : MonoBehaviour
 
     public void OnRestartButtonClicked()
     {
+        // Make sure we unpause the game first
+        if (pausePanel.activeSelf)
+        {
+            pausePanel.SetActive(false);
+            Time.timeScale = 1;
+        }
+
         // Restart current game with same operation and difficulty
         StartGameWithCurrentSelections();
 
