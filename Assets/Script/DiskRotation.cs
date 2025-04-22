@@ -35,6 +35,18 @@ public class DiskRotation : MonoBehaviour
     // Update disk numbers when operation or difficulty changes
     public void UpdateDiskNumbers()
     {
+        // Try to find GameManager if reference is null
+        if (gameManager == null)
+        {
+            gameManager = GameManager.Instance;
+
+            // If still null, try to find directly
+            if (gameManager == null)
+            {
+                gameManager = FindObjectOfType<GameManager>();
+            }
+        }
+
         if (gameManager != null)
         {
             numbers = gameManager.GetDiskNumbers(isLeftDisk);
@@ -46,7 +58,6 @@ public class DiskRotation : MonoBehaviour
             numbers = isLeftDisk ? new int[] { 1, 2, 3, 4, 5, 6 } : new int[] { 1, 2, 3, 4, 5, 6 };
         }
     }
-
     void HandleTouch()
     {
         Touch touch = Input.GetTouch(0);

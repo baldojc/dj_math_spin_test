@@ -49,7 +49,13 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         if (Instance == null)
+        {
             Instance = this;
+            DontDestroyOnLoad(gameObject);  // Add this line
+
+        }
+    
+
         else
         {
             Destroy(gameObject);
