@@ -41,20 +41,14 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Background
+    uniqueID: 2940199085
+    locked: 0
   - name: Disk
     uniqueID: 2843518903
     locked: 0
   - name: New Layer 2
     uniqueID: 2795791127
-    locked: 0
-  - name: New Layer 3
-    uniqueID: 882195665
-    locked: 0
-  - name: New Layer 4
-    uniqueID: 765785293
-    locked: 0
-  - name: New Layer 5
-    uniqueID: 3413393505
     locked: 0
   m_RenderingLayers:
   - Default

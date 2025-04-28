@@ -13,6 +13,7 @@ public class UIManager : MonoBehaviour
     public GameObject operationPickingPanel;
     public GameObject difficultyMenuPanel;
     public GameObject gameOverPanel;
+    public GameObject howToPlayPanel;
 
     // Game Panels - using a consistent naming convention
     // Addition panels
@@ -65,12 +66,23 @@ public class UIManager : MonoBehaviour
     public void ShowMainMenu()
     {
         AudioManager.Instance.PlayMenuMusic();
-
-
         HideAllPanels();
+
+        // Stop the timer when returning to main menu
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.PauseTimer();
+        }
+
         ToggleHUD(false); // Hide the HUD in main menu
         mainMenuPanel.SetActive(true);
         Time.timeScale = 1;
+    }
+    public void ShowHowToPlay()
+    {
+        HideAllPanels();
+        howToPlayPanel.SetActive(true);
+        Debug.Log("How To Play panel activated");
     }
 
     public void ShowOperationMenu()
@@ -99,6 +111,12 @@ public class UIManager : MonoBehaviour
 
     public void StartGameWithCurrentSelections()
     {
+        // Add null checks for currentOperationStr and currentDifficultyStr
+        if (string.IsNullOrEmpty(currentOperationStr))
+            currentOperationStr = "addition";
+        if (string.IsNullOrEmpty(currentDifficultyStr))
+            currentDifficultyStr = "easy";
+
         // Convert string selections to enum values
         GameManager.Operation operation = GetOperationFromString(currentOperationStr);
         GameManager.Difficulty difficulty = GetDifficultyFromString(currentDifficultyStr);
@@ -108,7 +126,6 @@ public class UIManager : MonoBehaviour
         {
             GameManager.Instance.SetOperation(operation);
             GameManager.Instance.SetDifficulty(difficulty);
-            // SetDifficulty already resets the timer and generates a new target number
         }
 
         // Start the game
@@ -138,10 +155,8 @@ public class UIManager : MonoBehaviour
     }
 
     public void StartGame()
-
     {
         AudioManager.Instance.PlayGameplayMusic();
-
         HideAllPanels();
 
         // Show the HUD for gameplay
@@ -159,12 +174,12 @@ public class UIManager : MonoBehaviour
             // Find and initialize the disks in the current panel
             SetupDisksInCurrentPanel();
 
-            // Ensure GameManager is properly initialized but don't regenerate numbers
-            // unless we're coming from a clean start
-            if (GameManager.Instance != null && !GameManager.Instance.timerActive)
+            // Always reset game state when starting a new game
+            if (GameManager.Instance != null)
             {
                 GameManager.Instance.GenerateTargetNumber();
                 GameManager.Instance.ResetTimer();
+                GameManager.Instance.ResumeTimer(); // Explicitly start the timer
             }
         }
         else
@@ -400,6 +415,12 @@ public class UIManager : MonoBehaviour
             pausePanel.SetActive(false);
             Time.timeScale = 1;
         }
+
+        // Check if operation and difficulty are set, if not use defaults
+        if (string.IsNullOrEmpty(currentOperationStr))
+            currentOperationStr = "addition";
+        if (string.IsNullOrEmpty(currentDifficultyStr))
+            currentDifficultyStr = "easy";
 
         // Restart current game with same operation and difficulty
         StartGameWithCurrentSelections();
