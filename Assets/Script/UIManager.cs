@@ -68,7 +68,6 @@ public class UIManager : MonoBehaviour
         AudioManager.Instance.PlayMenuMusic();
         HideAllPanels();
 
-        // Stop the timer when returning to main menu
         if (GameManager.Instance != null)
         {
             GameManager.Instance.PauseTimer();
