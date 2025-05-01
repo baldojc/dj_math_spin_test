@@ -308,9 +308,7 @@ public class UIManager : MonoBehaviour
         if (gameOverPanel != null)
         {
             HideAllPanels();
-
             ToggleHUD(false);
-
             gameOverPanel.SetActive(true);
 
             // Find and update score texts in the game over panel
@@ -321,7 +319,12 @@ public class UIManager : MonoBehaviour
                 finalScoreText.text = "Score: " + finalScore;
 
             if (highScoreText != null)
-                highScoreText.text = "High Score: " + highScore;
+            {
+                // Include operation and difficulty in high score text
+                string operationName = GameManager.Instance.currentOperation.ToString();
+                string difficultyName = GameManager.Instance.currentDifficulty.ToString();
+                highScoreText.text = $"High Score ({operationName} {difficultyName}): {highScore}";
+            }
         }
     }
     private void HideFeedback()

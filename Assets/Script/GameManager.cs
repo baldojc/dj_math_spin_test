@@ -474,19 +474,27 @@ public class GameManager : MonoBehaviour
         timerActive = false;
         Debug.Log("Game over! Final score: " + score);
 
-        // Save high score
-        int highScore = PlayerPrefs.GetInt("HighScore", 0);
+        // Get high score key based on current operation and difficulty
+        string highScoreKey = $"HighScore_{currentOperation}_{currentDifficulty}";
+
+        // Save high score if current score is higher
+        int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
         if (score > highScore)
         {
-            PlayerPrefs.SetInt("HighScore", score);
+            PlayerPrefs.SetInt(highScoreKey, score);
             PlayerPrefs.Save();
-            Debug.Log("New high score: " + score);
+            Debug.Log($"New high score for {currentOperation} {currentDifficulty}: {score}");
         }
 
         if (UIManager.Instance != null)
         {
-            UIManager.Instance.ShowGameOver(score, PlayerPrefs.GetInt("HighScore", 0));
+            UIManager.Instance.ShowGameOver(score, highScore);
         }
+    }
+    public int GetHighScore(Operation operation, Difficulty difficulty)
+    {
+        string highScoreKey = $"HighScore_{operation}_{difficulty}";
+        return PlayerPrefs.GetInt(highScoreKey, 0);
     }
 
     #endregion
