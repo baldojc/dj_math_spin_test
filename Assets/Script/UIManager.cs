@@ -57,6 +57,15 @@ public class UIManager : MonoBehaviour
     public GameObject volumeSliderPanel;
     public Slider volumeSlider;
 
+    [Header("Pause Screen Audio Controls")]
+    public Button pauseMusicButton;
+    public Button pauseFXButton;
+    public GameObject pauseMusicSliderPanel;
+    public GameObject pauseFXSliderPanel;
+    public Slider pauseMusicSlider;
+    public Slider pauseFXSlider;
+
+
     private void Awake()
     {
         if (Instance == null)
@@ -263,6 +272,21 @@ public class UIManager : MonoBehaviour
         pausePanel.SetActive(!isPaused);
         Time.timeScale = isPaused ? 1 : 0;
 
+        // Set up audio controls if we're showing the pause panel
+        if (!isPaused)
+        {
+            SetupPauseScreenAudioControls();
+        }
+        else
+        {
+            // Hide slider panels when unpausing
+            if (pauseMusicSliderPanel != null)
+                pauseMusicSliderPanel.SetActive(false);
+
+            if (pauseFXSliderPanel != null)
+                pauseFXSliderPanel.SetActive(false);
+        }
+
         // Add these lines:
         if (GameManager.Instance != null)
         {
@@ -460,7 +484,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    
+
     public void SetupVolumeControls()
     {
         // Find references if not assigned
@@ -498,6 +522,119 @@ public class UIManager : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    private void SetupPauseScreenAudioControls()
+    {
+        // Find references if not set
+        if (pausePanel != null)
+        {
+            // Try to find buttons if not assigned
+            if (pauseMusicButton == null)
+                pauseMusicButton = pausePanel.transform.Find("Music_Button")?.GetComponent<Button>();
+
+            if (pauseFXButton == null)
+                pauseFXButton = pausePanel.transform.Find("FX_Button")?.GetComponent<Button>();
+
+            // Try to find slider panels if not assigned
+            if (pauseMusicSliderPanel == null)
+                pauseMusicSliderPanel = pausePanel.transform.Find("MusicSliderPanel")?.gameObject;
+
+            if (pauseFXSliderPanel == null)
+                pauseFXSliderPanel = pausePanel.transform.Find("FXSliderPanel")?.gameObject;
+
+            // Try to find sliders if not assigned
+            if (pauseMusicSlider == null && pauseMusicSliderPanel != null)
+                pauseMusicSlider = pauseMusicSliderPanel.GetComponentInChildren<Slider>();
+
+            if (pauseFXSlider == null && pauseFXSliderPanel != null)
+                pauseFXSlider = pauseFXSliderPanel.GetComponentInChildren<Slider>();
+
+            // Set up button listeners
+            if (pauseMusicButton != null)
+            {
+                pauseMusicButton.onClick.RemoveAllListeners();
+                pauseMusicButton.onClick.AddListener(TogglePauseMusicSliderPanel);
+            }
+
+            if (pauseFXButton != null)
+            {
+                pauseFXButton.onClick.RemoveAllListeners();
+                pauseFXButton.onClick.AddListener(TogglePauseFXSliderPanel);
+            }
+
+            // Set up slider listeners
+            if (pauseMusicSlider != null)
+            {
+                pauseMusicSlider.value = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
+                pauseMusicSlider.onValueChanged.RemoveAllListeners();
+                pauseMusicSlider.onValueChanged.AddListener(OnPauseMusicVolumeChanged);
+            }
+
+            if (pauseFXSlider != null)
+            {
+                pauseFXSlider.value = PlayerPrefs.GetFloat("FXVolume", 1.0f);
+                pauseFXSlider.onValueChanged.RemoveAllListeners();
+                pauseFXSlider.onValueChanged.AddListener(OnPauseFXVolumeChanged);
+            }
+
+            // Hide slider panels initially
+            if (pauseMusicSliderPanel != null)
+                pauseMusicSliderPanel.SetActive(false);
+
+            if (pauseFXSliderPanel != null)
+                pauseFXSliderPanel.SetActive(false);
+        }
+    }
+
+    public void TogglePauseMusicSliderPanel()
+    {
+        if (pauseMusicSliderPanel != null)
+        {
+            // Hide FX slider panel if it's visible
+            if (pauseFXSliderPanel != null && pauseFXSliderPanel.activeSelf)
+                pauseFXSliderPanel.SetActive(false);
+
+            // Toggle music slider panel
+            pauseMusicSliderPanel.SetActive(!pauseMusicSliderPanel.activeSelf);
+
+            // Update slider value when showing
+            if (pauseMusicSliderPanel.activeSelf && pauseMusicSlider != null)
+                pauseMusicSlider.value = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
+        }
+    }
+
+    public void TogglePauseFXSliderPanel()
+    {
+        if (pauseFXSliderPanel != null)
+        {
+            // Hide music slider panel if it's visible
+            if (pauseMusicSliderPanel != null && pauseMusicSliderPanel.activeSelf)
+                pauseMusicSliderPanel.SetActive(false);
+
+            // Toggle FX slider panel
+            pauseFXSliderPanel.SetActive(!pauseFXSliderPanel.activeSelf);
+
+            // Update slider value when showing
+            if (pauseFXSliderPanel.activeSelf && pauseFXSlider != null)
+                pauseFXSlider.value = PlayerPrefs.GetFloat("FXVolume", 1.0f);
+        }
+    }
+
+    private void OnPauseMusicVolumeChanged(float value)
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.SetMusicVolume(value);
+        }
+    }
+
+    private void OnPauseFXVolumeChanged(float value)
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.SetFXVolume(value);
         }
     }
 

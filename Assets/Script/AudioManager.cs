@@ -20,6 +20,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip menuMusic; // For Start_Menu, OperatorPicker, Difficulty panels
     public AudioClip gameplayMusic; // For all gamePanel_* scenes
     [Range(0f, 1f)] public float musicVolume = 0.6f;
+    [Range(0f, 1f)] public float fxVolume = 1.0f;
 
     public List<Sound> sounds = new List<Sound>();
 
@@ -116,7 +117,7 @@ public class AudioManager : MonoBehaviour
         {
             s.source = gameObject.AddComponent<AudioSource>();
             s.source.clip = s.clip;
-            s.source.volume = s.volume * globalVolume;
+            s.source.volume = s.volume * fxVolume * globalVolume;
             s.source.pitch = s.pitch;
             s.source.loop = s.loop;
         }
@@ -124,6 +125,7 @@ public class AudioManager : MonoBehaviour
         // Load saved preferences
         musicEnabled = PlayerPrefs.GetInt("MusicEnabled", 1) == 1;
         musicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
+        fxVolume = PlayerPrefs.GetFloat("FXVolume", 1.0f);
         globalVolume = PlayerPrefs.GetFloat("GlobalVolume", 1f);
 
         // Initialize music
@@ -208,6 +210,19 @@ public class AudioManager : MonoBehaviour
         PlayerPrefs.SetFloat("MusicVolume", musicVolume);
     }
 
+    public void SetFXVolume(float volume)
+    {
+        fxVolume = Mathf.Clamp01(volume);
+
+        // Update all sound effects volumes
+        foreach (Sound s in sounds)
+        {
+            s.source.volume = s.volume * fxVolume * globalVolume;
+        }
+
+        PlayerPrefs.SetFloat("FXVolume", fxVolume);
+    }
+
     public void SetGlobalVolume(float volume)
     {
         globalVolume = Mathf.Clamp01(volume);
@@ -218,7 +233,7 @@ public class AudioManager : MonoBehaviour
         // Update all sound effects volumes
         foreach (Sound s in sounds)
         {
-            s.source.volume = s.volume * globalVolume;
+            s.source.volume = s.volume * fxVolume * globalVolume;
         }
 
         PlayerPrefs.SetFloat("GlobalVolume", globalVolume);
@@ -238,7 +253,7 @@ public class AudioManager : MonoBehaviour
         }
 
         s.source.pitch = pitch;
-        s.source.volume = volume * globalVolume;
+        s.source.volume = volume * fxVolume * globalVolume;
 
         if (delay > 0)
             s.source.PlayDelayed(delay);
