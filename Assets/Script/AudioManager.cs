@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class AudioManager : MonoBehaviour
 {
@@ -27,6 +28,12 @@ public class AudioManager : MonoBehaviour
     private bool musicEnabled = true;
     private AudioClip currentMusicClip;
 
+    // UI References
+    [Header("UI References")]
+    public GameObject volumeSliderPanel;
+    public Slider volumeSlider;
+    public Button musicToggleButton;
+
     void Awake()
     {
         if (Instance == null)
@@ -38,6 +45,62 @@ public class AudioManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    void Start()
+    {
+        // Find UI references if not set
+        FindUIReferences();
+
+        // Set up volume slider value
+        if (volumeSlider != null)
+        {
+            volumeSlider.value = musicVolume;
+            volumeSlider.onValueChanged.AddListener(SetMusicVolume);
+        }
+
+        // Hide volume slider panel initially
+        if (volumeSliderPanel != null)
+        {
+            volumeSliderPanel.SetActive(false);
+        }
+    }
+
+    void FindUIReferences()
+    {
+        // Only search for references if they're not assigned
+        if (volumeSliderPanel == null || volumeSlider == null)
+        {
+            Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+            foreach (Canvas canvas in canvases)
+            {
+                Transform mainMenuPanel = canvas.transform.Find("Start_Main_Menu_Panel");
+                if (mainMenuPanel != null)
+                {
+                    // Look for VolumeSliderPanel
+                    volumeSliderPanel = mainMenuPanel.Find("VolumeSliderPanel")?.gameObject;
+                    if (volumeSliderPanel != null)
+                    {
+                        volumeSlider = volumeSliderPanel.GetComponentInChildren<Slider>();
+                    }
+
+                    // Look for Music_Button
+                    Transform musicButton = mainMenuPanel.Find("Music_Button");
+                    if (musicButton != null)
+                    {
+                        musicToggleButton = musicButton.GetComponent<Button>();
+                        if (musicToggleButton != null)
+                        {
+                            // Add click listener if not already added
+                            musicToggleButton.onClick.RemoveAllListeners();
+                            musicToggleButton.onClick.AddListener(ToggleVolumeSliderPanel);
+                        }
+                    }
+
+                    break;
+                }
+            }
         }
     }
 
@@ -63,16 +126,54 @@ public class AudioManager : MonoBehaviour
         musicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
         globalVolume = PlayerPrefs.GetFloat("GlobalVolume", 1f);
 
-        PlayMenuMusic();
+        // Initialize music
+        UpdateMusicState();
     }
 
+    private void UpdateMusicState()
+    {
+        if (musicEnabled)
+        {
+            if (currentMusicClip == null)
+                PlayMenuMusic();
+        }
+        else
+        {
+            StopMusic();
+        }
+    }
+
+    #region Volume Slider Panel
+
+    public void ToggleVolumeSliderPanel()
+    {
+        if (volumeSliderPanel == null)
+        {
+            FindUIReferences();
+            if (volumeSliderPanel == null) return;
+        }
+
+        bool isActive = volumeSliderPanel.activeSelf;
+        volumeSliderPanel.SetActive(!isActive);
+
+        // If showing the slider, update its value
+        if (!isActive && volumeSlider != null)
+        {
+            volumeSlider.value = musicVolume;
+        }
+    }
+
+    #endregion
+
     #region Music Control
+
     public void PlayMenuMusic()
     {
         if (!musicEnabled || currentMusicClip == menuMusic) return;
 
         currentMusicClip = menuMusic;
         musicSource.clip = menuMusic;
+        musicSource.volume = musicVolume * globalVolume;
         musicSource.Play();
     }
 
@@ -82,6 +183,7 @@ public class AudioManager : MonoBehaviour
 
         currentMusicClip = gameplayMusic;
         musicSource.clip = gameplayMusic;
+        musicSource.volume = musicVolume * globalVolume;
         musicSource.Play();
     }
 
@@ -96,16 +198,7 @@ public class AudioManager : MonoBehaviour
         musicEnabled = !musicEnabled;
         PlayerPrefs.SetInt("MusicEnabled", musicEnabled ? 1 : 0);
 
-        if (musicEnabled)
-        {
-            // Resume current music type
-            if (currentMusicClip == menuMusic) PlayMenuMusic();
-            else if (currentMusicClip == gameplayMusic) PlayGameplayMusic();
-        }
-        else
-        {
-            StopMusic();
-        }
+        UpdateMusicState();
     }
 
     public void SetMusicVolume(float volume)
@@ -114,9 +207,27 @@ public class AudioManager : MonoBehaviour
         musicSource.volume = musicVolume * globalVolume;
         PlayerPrefs.SetFloat("MusicVolume", musicVolume);
     }
+
+    public void SetGlobalVolume(float volume)
+    {
+        globalVolume = Mathf.Clamp01(volume);
+
+        // Update music volume
+        musicSource.volume = musicVolume * globalVolume;
+
+        // Update all sound effects volumes
+        foreach (Sound s in sounds)
+        {
+            s.source.volume = s.volume * globalVolume;
+        }
+
+        PlayerPrefs.SetFloat("GlobalVolume", globalVolume);
+    }
+
     #endregion
 
     #region Sound Effects
+
     public void PlaySound(string soundName, float pitch = 1f, float volume = 1f, float delay = 0f)
     {
         Sound s = sounds.Find(sound => sound.name == soundName);
@@ -128,11 +239,13 @@ public class AudioManager : MonoBehaviour
 
         s.source.pitch = pitch;
         s.source.volume = volume * globalVolume;
+
         if (delay > 0)
             s.source.PlayDelayed(delay);
         else
             s.source.Play();
     }
+
     #endregion
 
     void OnApplicationQuit()

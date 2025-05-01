@@ -51,6 +51,12 @@ public class UIManager : MonoBehaviour
     private string currentOperationStr;
     private string currentDifficultyStr;
 
+    #region Audio Controls
+    [Header("Audio UI References")]
+    public Button musicToggleButton;
+    public GameObject volumeSliderPanel;
+    public Slider volumeSlider;
+
     private void Awake()
     {
         if (Instance == null)
@@ -61,6 +67,7 @@ public class UIManager : MonoBehaviour
             return;
         }
         ShowMainMenu();
+        SetupVolumeControls();
     }
 
     public void ShowMainMenu()
@@ -328,6 +335,7 @@ public class UIManager : MonoBehaviour
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (operationPickingPanel != null) operationPickingPanel.SetActive(false);
         if (difficultyMenuPanel != null) difficultyMenuPanel.SetActive(false);
+        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
 
         if (gamePanel_Addition_Easy != null) gamePanel_Addition_Easy.SetActive(false);
         if (gamePanel_Addition_Medium != null) gamePanel_Addition_Medium.SetActive(false);
@@ -448,4 +456,70 @@ public class UIManager : MonoBehaviour
             }
         }
     }
+
+    
+    public void SetupVolumeControls()
+    {
+        // Find references if not assigned
+        if (musicToggleButton == null)
+        {
+            Canvas mainCanvas = FindObjectOfType<Canvas>();
+            if (mainCanvas != null)
+            {
+                Transform startMenuPanel = mainCanvas.transform.Find("Start_Main_Menu_Panel");
+                if (startMenuPanel != null)
+                {
+                    musicToggleButton = startMenuPanel.Find("Music_Button")?.GetComponent<Button>();
+                    volumeSliderPanel = startMenuPanel.Find("VolumeSliderPanel")?.gameObject;
+
+                    if (volumeSliderPanel != null)
+                    {
+                        volumeSlider = volumeSliderPanel.GetComponentInChildren<Slider>();
+
+                        // Set initial state
+                        volumeSliderPanel.SetActive(false);
+
+                        // Connect slider to volume control
+                        if (volumeSlider != null && AudioManager.Instance != null)
+                        {
+                            volumeSlider.value = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
+                            volumeSlider.onValueChanged.AddListener(delegate { AudioManager.Instance.SetMusicVolume(volumeSlider.value); });
+                        }
+                    }
+
+                    // Set up music button
+                    if (musicToggleButton != null)
+                    {
+                        musicToggleButton.onClick.RemoveAllListeners();
+                        musicToggleButton.onClick.AddListener(ToggleVolumePanel);
+                    }
+                }
+            }
+        }
+    }
+
+    public void ToggleVolumePanel()
+    {
+        if (volumeSliderPanel != null)
+        {
+            bool isActive = volumeSliderPanel.activeSelf;
+            volumeSliderPanel.SetActive(!isActive);
+        }
+        else
+        {
+            Debug.LogWarning("Volume slider panel reference not found!");
+        }
+    }
+
+    #endregion
+
+
+
+
+
+
+
+
+
+
 }
