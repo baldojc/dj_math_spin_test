@@ -1,4 +1,8 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 
 public class DiskRotation : MonoBehaviour
 {
@@ -9,6 +13,9 @@ public class DiskRotation : MonoBehaviour
     private Vector2 lastInputPosition;
     private GameManager gameManager;
     private AudioManager audioManager;
+    private Camera mainCamera;
+    private InputAction pointerPosition;
+    private InputAction pointerPress;
 
     // Sound effect parameters
     [Header("Sound Settings")]
@@ -28,16 +35,66 @@ public class DiskRotation : MonoBehaviour
     private float rotationIdleTime = 0f;
     private const float ROTATION_TIMEOUT = 0.1f; // Time without rotation before fading out
 
+    public TextMeshPro[] numberTexts;
+
+    private void Awake()
+    {
+        // Get reference to the camera
+        mainCamera = Camera.main;
+
+        // Initialize Input System actions
+        pointerPosition = new InputAction("PointerPosition", binding: "<Pointer>/position");
+        pointerPress = new InputAction("PointerPress", binding: "<Pointer>/press");
+
+        // Register event callbacks
+        pointerPress.performed += ctx => OnPointerDown();
+        pointerPress.canceled += ctx => OnPointerUp();
+    }
+
+    private void OnEnable()
+    {
+        // Enable Input actions when script is enabled
+        pointerPosition.Enable();
+        pointerPress.Enable();
+
+        // Enable enhanced touch support for better mobile handling
+        EnhancedTouchSupport.Enable();
+        Touch.onFingerDown += OnFingerDown;
+        Touch.onFingerMove += OnFingerMove;
+        Touch.onFingerUp += OnFingerUp;
+    }
+
+    private void OnDisable()
+    {
+        // Disable Input actions when script is disabled
+        pointerPosition.Disable();
+        pointerPress.Disable();
+
+        // Disable enhanced touch
+        Touch.onFingerDown -= OnFingerDown;
+        Touch.onFingerMove -= OnFingerMove;
+        Touch.onFingerUp -= OnFingerUp;
+
+        if (EnhancedTouchSupport.enabled)
+            EnhancedTouchSupport.Disable();
+    }
+
     void Start()
     {
-        // Get reference to the GameManager
+        // Add this debug check
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("GameManager.Instance is null in Start()!");
+        }
+        else
+        {
+            Debug.Log("GameManager reference found successfully");
+        }
+
         gameManager = GameManager.Instance;
-        // Get reference to the AudioManager
         audioManager = AudioManager.Instance;
-
-        // Setup dedicated audio source for smooth rotational audio
+        mainCamera = Camera.main;
         SetupAudioSource();
-
         UpdateDiskNumbers();
         SelectCurrentNumber();
     }
@@ -68,18 +125,86 @@ public class DiskRotation : MonoBehaviour
 
     void Update()
     {
-        // Check for touch input first (mobile)
-        if (Input.touchCount > 0)
+        // Handle mouse/pointer input in non-mobile platforms
+        if (Touchscreen.current == null || !EnhancedTouchSupport.enabled)
         {
-            HandleTouch();
-        }
-        else
-        {
-            HandleMouse();
+            HandlePointerInput();
         }
 
         // Update sound smoothly
         UpdateRotationSound();
+    }
+
+    private void HandlePointerInput()
+    {
+        if (isDragging)
+        {
+            Vector2 currentPointerPos = GetPointerWorldPosition();
+            RotateDiskCircular(lastInputPosition, currentPointerPos);
+            lastInputPosition = currentPointerPos;
+        }
+    }
+
+    private Vector2 GetPointerWorldPosition()
+    {
+        Vector2 screenPosition = pointerPosition.ReadValue<Vector2>();
+        return mainCamera.ScreenToWorldPoint(screenPosition);
+    }
+
+    private void OnPointerDown()
+    {
+        Vector2 pointerWorldPos = GetPointerWorldPosition();
+
+        if (IsTouchOnThisDisk(pointerWorldPos))
+        {
+            isDragging = true;
+            lastInputPosition = pointerWorldPos;
+        }
+    }
+
+    private void OnPointerUp()
+    {
+        if (isDragging)
+        {
+            isDragging = false;
+            SelectCurrentNumber();
+            targetVolume = 0f; // Start fading out rotation sound
+        }
+    }
+
+    // Enhanced Touch handlers for mobile
+    private void OnFingerDown(Finger finger)
+    {
+        // Only process first touch
+        if (finger.index != 0) return;
+
+        Vector2 touchWorldPos = mainCamera.ScreenToWorldPoint(finger.screenPosition);
+
+        if (IsTouchOnThisDisk(touchWorldPos))
+        {
+            isDragging = true;
+            lastInputPosition = touchWorldPos;
+        }
+    }
+
+    private void OnFingerMove(Finger finger)
+    {
+        // Only process first touch
+        if (finger.index != 0 || !isDragging) return;
+
+        Vector2 touchWorldPos = mainCamera.ScreenToWorldPoint(finger.screenPosition);
+        RotateDiskCircular(lastInputPosition, touchWorldPos);
+        lastInputPosition = touchWorldPos;
+    }
+
+    private void OnFingerUp(Finger finger)
+    {
+        // Only process first touch
+        if (finger.index != 0 || !isDragging) return;
+
+        isDragging = false;
+        SelectCurrentNumber();
+        targetVolume = 0f; // Start fading out rotation sound
     }
 
     void UpdateRotationSound()
@@ -121,94 +246,53 @@ public class DiskRotation : MonoBehaviour
     // Update disk numbers when operation or difficulty changes
     public void UpdateDiskNumbers()
     {
-        // Try to find GameManager if reference is null
         if (gameManager == null)
         {
             gameManager = GameManager.Instance;
 
-            // If still null, try to find directly
             if (gameManager == null)
             {
                 gameManager = FindObjectOfType<GameManager>();
+
+                if (gameManager == null)
+                {
+                    Debug.LogError("GameManager not found in scene!");
+                    return;
+                }
             }
         }
 
-        if (gameManager != null)
+        try
         {
             numbers = gameManager.GetDiskNumbers(isLeftDisk);
+            UpdateNumberDisplay();
         }
-        else
+        catch (System.Exception e)
         {
-            Debug.LogError("GameManager reference not found!");
-            // Fallback numbers
-            numbers = isLeftDisk ? new int[] { 1, 2, 3, 4, 5, 6 } : new int[] { 1, 2, 3, 4, 5, 6 };
-        }
-    }
-
-    void HandleTouch()
-    {
-        Touch touch = Input.GetTouch(0);
-        Vector2 touchWorldPos = Camera.main.ScreenToWorldPoint(touch.position);
-
-        switch (touch.phase)
-        {
-            case TouchPhase.Began:
-                if (IsTouchOnThisDisk(touchWorldPos))
-                {
-                    isDragging = true;
-                    lastInputPosition = touchWorldPos;
-                }
-                break;
-            case TouchPhase.Moved:
-                if (isDragging)
-                {
-                    Vector2 currentTouchPos = touchWorldPos;
-                    RotateDiskCircular(lastInputPosition, currentTouchPos);
-                    lastInputPosition = currentTouchPos;
-                }
-                break;
-            case TouchPhase.Ended:
-            case TouchPhase.Canceled:
-                isDragging = false;
-                SelectCurrentNumber();
-                // Start fading out rotation sound
-                targetVolume = 0f;
-                break;
+            Debug.LogError($"Failed to update disk numbers: {e.Message}");
         }
     }
-
-    void HandleMouse()
+    private void UpdateNumberDisplay()
     {
-        Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
-        // Mouse button down (equivalent to touch began)
-        if (Input.GetMouseButtonDown(0))
+        if (numberTexts == null || numberTexts.Length < 6)
         {
-            if (IsTouchOnThisDisk(mouseWorldPos))
+            Debug.LogError("NumberTexts not properly configured on disk!");
+            return;
+        }
+
+        for (int i = 0; i < numbers.Length; i++)
+        {
+            if (numberTexts[i] != null)
             {
-                isDragging = true;
-                lastInputPosition = mouseWorldPos;
+                numberTexts[i].text = numbers[i].ToString();
+            }
+            else
+            {
+                Debug.LogError($"TextMeshPro element {i} missing on disk!");
             }
         }
-        // Mouse drag (equivalent to touch moved)
-        else if (Input.GetMouseButton(0))
-        {
-            if (isDragging)
-            {
-                Vector2 currentMousePos = mouseWorldPos;
-                RotateDiskCircular(lastInputPosition, currentMousePos);
-                lastInputPosition = currentMousePos;
-            }
-        }
-        // Mouse button up (equivalent to touch ended)
-        else if (Input.GetMouseButtonUp(0))
-        {
-            isDragging = false;
-            SelectCurrentNumber();
-            // Start fading out rotation sound
-            targetVolume = 0f;
-        }
     }
+
 
     bool IsTouchOnThisDisk(Vector2 inputPos)
     {
@@ -277,6 +361,7 @@ public class DiskRotation : MonoBehaviour
         else
             gameManager.UpdateRightNumber(numbers[selectedIndex]);
     }
+
 
     public void RefreshDisk()
     {

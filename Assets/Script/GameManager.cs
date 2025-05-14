@@ -1,8 +1,8 @@
-// Updated GameManager Script
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
@@ -14,6 +14,8 @@ public class GameManager : MonoBehaviour
 
     public int targetNumber;
     public int score = 0;
+    private int currentStreak = 0;
+    private const int MAX_STREAK_BONUS = 5;
 
     public int LeftSelectedNumber;
     public int RightSelectedNumber;
@@ -45,6 +47,10 @@ public class GameManager : MonoBehaviour
     // Dictionary for disk number arrays
     private Dictionary<string, int[][]> diskNumbersMap;
 
+    // Target number history to prevent immediate repetition
+    private List<int> recentTargetNumbers = new List<int>();
+    private const int MAX_RECENT_TARGETS = 5;
+
     // In GameManager.Awake() after setting Instance
     void Awake()
     {
@@ -52,10 +58,7 @@ public class GameManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);  // Add this line
-
         }
-    
-
         else
         {
             Destroy(gameObject);
@@ -93,6 +96,7 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         score = 0;
+        currentStreak = 0;
         UpdateScoreUI();
 
         // Initialize sprite dictionary
@@ -131,9 +135,11 @@ public class GameManager : MonoBehaviour
     {
         currentDifficulty = difficulty;
         score = 0;
+        currentStreak = 0;
         UpdateScoreUI();
+        ClearRecentTargets();
         GenerateTargetNumber();
-        ResetTimer(); 
+        ResetTimer();
     }
 
     public void SetOperation(Operation operation)
@@ -149,8 +155,9 @@ public class GameManager : MonoBehaviour
         }
 
         UpdateOperatorImage();
+        ClearRecentTargets();
         GenerateTargetNumber();
-        ResetTimer(); 
+        ResetTimer();
     }
 
     private void InitializeDiskNumbers()
@@ -212,26 +219,99 @@ public class GameManager : MonoBehaviour
             new int[] { 3, 4, 5, 6, 7, 8 }        // Right disk 
         };
 
-        
+
         diskNumbersMap["division_easy"] = new int[][]
         {
             new int[] { 2, 4, 6, 8, 10, 12 },     // Left disk (dividend) 
             new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk (divisor) 
         };
 
-        // Division Medium (perfect division) 
+        // Division Medium (perfect division) - Now more varied
         diskNumbersMap["division_medium"] = new int[][]
         {
-            new int[] { 10, 15, 20, 25, 30, 35 }, // Left disk 
-            new int[] { 2, 5, 5, 5, 5, 5 }        // Right disk 
+            new int[] { 10, 15, 18, 20, 24, 30 }, // Left disk 
+            new int[] { 2, 3, 3, 4, 6, 5 }        // Right disk 
         };
 
-        // Division Hard (perfect division) 
+        // Division Hard (perfect division) - Now more varied
         diskNumbersMap["division_hard"] = new int[][]
         {
-            new int[] { 12, 16, 20, 24, 30, 36 }, // Left disk 
-            new int[] { 2, 4, 5, 6, 6, 9 }        // Right disk 
+            new int[] { 12, 16, 20, 24, 28, 36 }, // Left disk 
+            new int[] { 2, 4, 5, 6, 7, 9 }        // Right disk 
         };
+    }
+
+    private void ClearRecentTargets()
+    {
+        recentTargetNumbers.Clear();
+    }
+
+    private bool IsTargetRepeated(int target)
+    {
+        return recentTargetNumbers.Contains(target);
+    }
+
+    private void AddToRecentTargets(int target)
+    {
+        recentTargetNumbers.Add(target);
+        if (recentTargetNumbers.Count > MAX_RECENT_TARGETS)
+        {
+            recentTargetNumbers.RemoveAt(0);
+        }
+    }
+
+    // Method to find all possible results from the current disks
+    private List<int> GetAllPossibleResults()
+    {
+        string mapKey = currentOperation.ToString().ToLower() + "_" + currentDifficulty.ToString().ToLower();
+        if (!diskNumbersMap.TryGetValue(mapKey, out int[][] diskNumbers))
+        {
+            return new List<int>();
+        }
+
+        int[] leftDiskNumbers = diskNumbers[0];
+        int[] rightDiskNumbers = diskNumbers[1];
+        List<int> possibleResults = new List<int>();
+
+        // Calculate all possible results based on operation
+        foreach (int left in leftDiskNumbers)
+        {
+            foreach (int right in rightDiskNumbers)
+            {
+                int result = 0;
+                bool validResult = true;
+
+                switch (currentOperation)
+                {
+                    case Operation.Addition:
+                        result = left + right;
+                        break;
+                    case Operation.Subtraction:
+                        result = left - right;
+                        break;
+                    case Operation.Multiplication:
+                        result = left * right;
+                        break;
+                    case Operation.Division:
+                        if (right != 0 && left % right == 0)
+                        {
+                            result = left / right;
+                        }
+                        else
+                        {
+                            validResult = false;
+                        }
+                        break;
+                }
+
+                if (validResult && !possibleResults.Contains(result))
+                {
+                    possibleResults.Add(result);
+                }
+            }
+        }
+
+        return possibleResults;
     }
 
     public void GenerateTargetNumber()
@@ -253,72 +333,104 @@ public class GameManager : MonoBehaviour
         int[] leftDiskNumbers = diskNumbers[0];
         int[] rightDiskNumbers = diskNumbers[1];
 
-        // Generate a valid target number based on the available disk values
-        switch (currentOperation)
+        // Try to find a non-repeated target up to 10 attempts
+        int attempts = 0;
+        int maxAttempts = 10;
+        bool foundValidTarget = false;
+
+        // Get all possible targets for the current setup
+        List<int> allPossibleResults = GetAllPossibleResults();
+
+        // Remove recent targets from possibilities
+        List<int> validTargets = new List<int>(allPossibleResults);
+        foreach (int recent in recentTargetNumbers)
         {
-            case Operation.Addition:
-                // Pick random numbers from each disk and set target to their sum
-                int leftAddend = leftDiskNumbers[Random.Range(0, leftDiskNumbers.Length)];
-                int rightAddend = rightDiskNumbers[Random.Range(0, rightDiskNumbers.Length)];
-                targetNumber = leftAddend + rightAddend;
-                break;
+            validTargets.Remove(recent);
+        }
 
-            case Operation.Subtraction:
-                // Pick random numbers from each disk and set target to their difference
-                int minuend = leftDiskNumbers[Random.Range(0, leftDiskNumbers.Length)];
-                int subtrahend = rightDiskNumbers[Random.Range(0, rightDiskNumbers.Length)];
-                targetNumber = minuend - subtrahend;
-                break;
+        // If we've exhausted all possible numbers, allow reusing older ones
+        if (validTargets.Count == 0)
+        {
+            validTargets = new List<int>(allPossibleResults);
+        }
 
-            case Operation.Multiplication:
-                // Pick random numbers from each disk and set target to their product
-                int multiplicand = leftDiskNumbers[Random.Range(0, leftDiskNumbers.Length)];
-                int multiplier = rightDiskNumbers[Random.Range(0, rightDiskNumbers.Length)];
-                targetNumber = multiplicand * multiplier;
-                break;
+        while (attempts < maxAttempts && !foundValidTarget)
+        {
+            attempts++;
 
-            case Operation.Division:
-                // For division, we need to ensure the result is a whole number
-                int dividendIndex = Random.Range(0, leftDiskNumbers.Length);
-                int divisorIndex = Random.Range(0, rightDiskNumbers.Length);
-                int dividend = leftDiskNumbers[dividendIndex];
-                int divisor = rightDiskNumbers[divisorIndex];
-
-                // Ensure we don't divide by zero
-                if (divisor == 0)
+            // Select a random valid target
+            if (validTargets.Count > 0)
+            {
+                int randomIndex = Random.Range(0, validTargets.Count);
+                targetNumber = validTargets[randomIndex];
+                foundValidTarget = true;
+            }
+            else
+            {
+                // Fallback generation logic
+                switch (currentOperation)
                 {
-                    divisor = 1;
-                }
+                    case Operation.Addition:
+                        int leftAddend = leftDiskNumbers[Random.Range(0, leftDiskNumbers.Length)];
+                        int rightAddend = rightDiskNumbers[Random.Range(0, rightDiskNumbers.Length)];
+                        targetNumber = leftAddend + rightAddend;
+                        break;
 
-                // Check if division results in a whole number
-                if (dividend % divisor == 0)
-                {
-                    targetNumber = dividend / divisor;
-                }
-                else
-                {
-                    // If not a whole number, try to find a valid pair
-                    bool foundValid = false;
-                    for (int i = 0; i < leftDiskNumbers.Length && !foundValid; i++)
-                    {
-                        for (int j = 0; j < rightDiskNumbers.Length && !foundValid; j++)
+                    case Operation.Subtraction:
+                        int minuend = leftDiskNumbers[Random.Range(0, leftDiskNumbers.Length)];
+                        int subtrahend = rightDiskNumbers[Random.Range(0, rightDiskNumbers.Length)];
+                        targetNumber = minuend - subtrahend;
+                        break;
+
+                    case Operation.Multiplication:
+                        int multiplicand = leftDiskNumbers[Random.Range(0, leftDiskNumbers.Length)];
+                        int multiplier = rightDiskNumbers[Random.Range(0, rightDiskNumbers.Length)];
+                        targetNumber = multiplicand * multiplier;
+                        break;
+
+                    case Operation.Division:
+                        // For division, find a valid division pair with whole number result
+                        List<KeyValuePair<int, int>> validDivisionPairs = new List<KeyValuePair<int, int>>();
+
+                        for (int i = 0; i < leftDiskNumbers.Length; i++)
                         {
-                            int newDividend = leftDiskNumbers[i];
-                            int newDivisor = rightDiskNumbers[j];
-
-                            if (newDivisor != 0 && newDividend % newDivisor == 0)
+                            for (int j = 0; j < rightDiskNumbers.Length; j++)
                             {
-                                dividend = newDividend;
-                                divisor = newDivisor;
-                                foundValid = true;
+                                int dividend = leftDiskNumbers[i];
+                                int divisor = rightDiskNumbers[j];
+
+                                if (divisor != 0 && dividend % divisor == 0)
+                                {
+                                    validDivisionPairs.Add(new KeyValuePair<int, int>(dividend, divisor));
+                                }
                             }
                         }
-                    }
 
-                    targetNumber = dividend / divisor;
+                        if (validDivisionPairs.Count > 0)
+                        {
+                            int randomPair = Random.Range(0, validDivisionPairs.Count);
+                            int dividend = validDivisionPairs[randomPair].Key;
+                            int divisor = validDivisionPairs[randomPair].Value;
+                            targetNumber = dividend / divisor;
+                        }
+                        else
+                        {
+                            // Default fallback
+                            targetNumber = 2;
+                        }
+                        break;
                 }
-                break;
+
+                // Check if this fallback target is in our recent list
+                if (!IsTargetRepeated(targetNumber))
+                {
+                    foundValidTarget = true;
+                }
+            }
         }
+
+        // Add to recent targets list
+        AddToRecentTargets(targetNumber);
 
         targetNumberText.text = "Target: " + targetNumber;
         UpdateOperatorImage();
@@ -389,18 +501,33 @@ public class GameManager : MonoBehaviour
 
         if (isCorrect)
         {
-            score += 10;
+            // Increase streak count and calculate bonus
+            currentStreak++;
+            int streakBonus = Mathf.Min(currentStreak - 1, MAX_STREAK_BONUS);
+            int pointsToAdd = 10 + streakBonus;
+
+            score += pointsToAdd;
             UpdateScoreUI();
+
+            // Show bonus points effect
+            if (streakBonus > 0)
+            {
+                Debug.Log($"Streak: {currentStreak}! Bonus points: +{streakBonus}");
+                // Optional: Show streak UI feedback
+            }
 
             // Play correct sound with AudioManager
             AudioManager.Instance.PlaySound("Correct");
             // Optional: Add random pitch variation for DJ effect
-            AudioManager.Instance.PlaySound("Correct", pitch: Random.Range(0.95f, 1.05f));
+            AudioManager.Instance.PlaySound("Correct", pitch: Random.Range(0.95f, 1.05f) + (streakBonus * 0.02f));
 
             GenerateTargetNumber();
         }
         else
         {
+            // Reset streak on wrong answer
+            currentStreak = 0;
+
             // Play incorrect sound with AudioManager
             AudioManager.Instance.PlaySound("Incorrect");
             // Optional: Add record scratch sound
@@ -491,6 +618,7 @@ public class GameManager : MonoBehaviour
             UIManager.Instance.ShowGameOver(score, highScore);
         }
     }
+
     public int GetHighScore(Operation operation, Difficulty difficulty)
     {
         string highScoreKey = $"HighScore_{operation}_{difficulty}";
@@ -502,14 +630,13 @@ public class GameManager : MonoBehaviour
     // Provide access to disk number arrays for other scripts
     public int[] GetDiskNumbers(bool isLeftDisk)
     {
-        string mapKey = currentOperation.ToString().ToLower() + "_" + currentDifficulty.ToString().ToLower();
+        string mapKey = $"{currentOperation.ToString().ToLower()}_{currentDifficulty.ToString().ToLower()}";
 
         if (diskNumbersMap.TryGetValue(mapKey, out int[][] diskNumbers))
         {
             return isLeftDisk ? diskNumbers[0] : diskNumbers[1];
         }
 
-        // Fallback default numbers if not found
-        return isLeftDisk ? new int[] { 1, 2, 3, 4, 5, 6 } : new int[] { 1, 2, 3, 4, 5, 6 };
+        return new int[] { 1, 2, 3, 4, 5, 6 };
     }
 }

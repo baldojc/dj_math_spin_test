@@ -31,9 +31,8 @@ public class AudioManager : MonoBehaviour
 
     // UI References
     [Header("UI References")]
-    public GameObject volumeSliderPanel;
-    public Slider volumeSlider;
-    public Button musicToggleButton;
+    public Button musicButton;
+    public Button muteButton;
 
     void Awake()
     {
@@ -53,25 +52,14 @@ public class AudioManager : MonoBehaviour
     {
         // Find UI references if not set
         FindUIReferences();
-
-        // Set up volume slider value
-        if (volumeSlider != null)
-        {
-            volumeSlider.value = musicVolume;
-            volumeSlider.onValueChanged.AddListener(SetMusicVolume);
-        }
-
-        // Hide volume slider panel initially
-        if (volumeSliderPanel != null)
-        {
-            volumeSliderPanel.SetActive(false);
-        }
     }
+
+
 
     void FindUIReferences()
     {
         // Only search for references if they're not assigned
-        if (volumeSliderPanel == null || volumeSlider == null)
+        if (musicButton == null || muteButton == null)
         {
             Canvas[] canvases = FindObjectsOfType<Canvas>(true);
             foreach (Canvas canvas in canvases)
@@ -79,23 +67,29 @@ public class AudioManager : MonoBehaviour
                 Transform mainMenuPanel = canvas.transform.Find("Start_Main_Menu_Panel");
                 if (mainMenuPanel != null)
                 {
-                    // Look for VolumeSliderPanel
-                    volumeSliderPanel = mainMenuPanel.Find("VolumeSliderPanel")?.gameObject;
-                    if (volumeSliderPanel != null)
+                    // Look for music_button
+                    Transform musicBtnTransform = mainMenuPanel.Find("music_button");
+                    if (musicBtnTransform != null)
                     {
-                        volumeSlider = volumeSliderPanel.GetComponentInChildren<Slider>();
-                    }
-
-                    // Look for Music_Button
-                    Transform musicButton = mainMenuPanel.Find("Music_Button");
-                    if (musicButton != null)
-                    {
-                        musicToggleButton = musicButton.GetComponent<Button>();
-                        if (musicToggleButton != null)
+                        musicButton = musicBtnTransform.GetComponent<Button>();
+                        if (musicButton != null)
                         {
                             // Add click listener if not already added
-                            musicToggleButton.onClick.RemoveAllListeners();
-                            musicToggleButton.onClick.AddListener(ToggleVolumeSliderPanel);
+                            musicButton.onClick.RemoveAllListeners();
+                            musicButton.onClick.AddListener(EnableMusic);
+                        }
+                    }
+
+                    // Look for mute_button
+                    Transform muteBtnTransform = mainMenuPanel.Find("mute_button");
+                    if (muteBtnTransform != null)
+                    {
+                        muteButton = muteBtnTransform.GetComponent<Button>();
+                        if (muteButton != null)
+                        {
+                            // Add click listener if not already added
+                            muteButton.onClick.RemoveAllListeners();
+                            muteButton.onClick.AddListener(DisableMusic);
                         }
                     }
 
@@ -124,7 +118,6 @@ public class AudioManager : MonoBehaviour
 
         // Load saved preferences
         musicEnabled = PlayerPrefs.GetInt("MusicEnabled", 1) == 1;
-        musicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
         fxVolume = PlayerPrefs.GetFloat("FXVolume", 1.0f);
         globalVolume = PlayerPrefs.GetFloat("GlobalVolume", 1f);
 
@@ -144,28 +137,6 @@ public class AudioManager : MonoBehaviour
             StopMusic();
         }
     }
-
-    #region Volume Slider Panel
-
-    public void ToggleVolumeSliderPanel()
-    {
-        if (volumeSliderPanel == null)
-        {
-            FindUIReferences();
-            if (volumeSliderPanel == null) return;
-        }
-
-        bool isActive = volumeSliderPanel.activeSelf;
-        volumeSliderPanel.SetActive(!isActive);
-
-        // If showing the slider, update its value
-        if (!isActive && volumeSlider != null)
-        {
-            volumeSlider.value = musicVolume;
-        }
-    }
-
-    #endregion
 
     #region Music Control
 
@@ -195,19 +166,53 @@ public class AudioManager : MonoBehaviour
         currentMusicClip = null;
     }
 
-    public void ToggleMusic()
+    public void EnableMusic()
     {
-        musicEnabled = !musicEnabled;
-        PlayerPrefs.SetInt("MusicEnabled", musicEnabled ? 1 : 0);
-
+        musicEnabled = true;
+        PlayerPrefs.SetInt("MusicEnabled", 1);
         UpdateMusicState();
+        Debug.Log("Music enabled");
+    }
+
+    public void DisableMusic()
+    {
+        musicEnabled = false;
+        PlayerPrefs.SetInt("MusicEnabled", 0);
+        StopMusic();
+        Debug.Log("Music disabled");
     }
 
     public void SetMusicVolume(float volume)
     {
         musicVolume = Mathf.Clamp01(volume);
-        musicSource.volume = musicVolume * globalVolume;
-        PlayerPrefs.SetFloat("MusicVolume", musicVolume);
+
+        // Update music volume if music source exists
+        if (musicSource != null)
+        {
+            musicSource.volume = musicVolume * globalVolume;
+        }
+    }
+
+    #endregion
+
+    #region Sound Effects
+
+    public void PlaySound(string soundName, float pitch = 1f, float volume = 1f, float delay = 0f)
+    {
+        Sound s = sounds.Find(sound => sound.name == soundName);
+        if (s == null)
+        {
+            Debug.LogWarning("Sound not found: " + soundName);
+            return;
+        }
+
+        s.source.pitch = pitch;
+        s.source.volume = volume * fxVolume * globalVolume;
+
+        if (delay > 0)
+            s.source.PlayDelayed(delay);
+        else
+            s.source.Play();
     }
 
     public void SetFXVolume(float volume)
@@ -241,27 +246,7 @@ public class AudioManager : MonoBehaviour
 
     #endregion
 
-    #region Sound Effects
 
-    public void PlaySound(string soundName, float pitch = 1f, float volume = 1f, float delay = 0f)
-    {
-        Sound s = sounds.Find(sound => sound.name == soundName);
-        if (s == null)
-        {
-            Debug.LogWarning("Sound not found: " + soundName);
-            return;
-        }
-
-        s.source.pitch = pitch;
-        s.source.volume = volume * fxVolume * globalVolume;
-
-        if (delay > 0)
-            s.source.PlayDelayed(delay);
-        else
-            s.source.Play();
-    }
-
-    #endregion
 
     void OnApplicationQuit()
     {

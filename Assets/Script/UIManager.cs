@@ -2,7 +2,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using UnityEngine.UI;
-
+using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
@@ -15,26 +15,7 @@ public class UIManager : MonoBehaviour
     public GameObject gameOverPanel;
     public GameObject howToPlayPanel;
 
-    // Game Panels - using a consistent naming convention
-    // Addition panels
-    public GameObject gamePanel_Addition_Easy;
-    public GameObject gamePanel_Addition_Medium;
-    public GameObject gamePanel_Addition_Hard;
-
-    // Subtraction panels
-    public GameObject gamePanel_Subtraction_Easy;
-    public GameObject gamePanel_Subtraction_Medium;
-    public GameObject gamePanel_Subtraction_Hard;
-
-    // Multiplication panels
-    public GameObject gamePanel_Multiplication_Easy;
-    public GameObject gamePanel_Multiplication_Medium;
-    public GameObject gamePanel_Multiplication_Hard;
-
-    // Division panels
-    public GameObject gamePanel_Division_Easy;
-    public GameObject gamePanel_Division_Medium;
-    public GameObject gamePanel_Division_Hard;
+    public GameObject gamePanel;
 
     // Common game UI elements
     public GameObject pausePanel;
@@ -51,20 +32,16 @@ public class UIManager : MonoBehaviour
     private string currentOperationStr;
     private string currentDifficultyStr;
 
-    #region Audio Controls
-    [Header("Audio UI References")]
-    public Button musicToggleButton;
-    public GameObject volumeSliderPanel;
-    public Slider volumeSlider;
+    // Flag to track if game is paused
+    private bool isGamePaused = false;
 
-    [Header("Pause Screen Audio Controls")]
+    // Audio UI References
+    public Button musicButton;
+    public Button muteButton;
+
+    // Pause Screen Audio Controls
     public Button pauseMusicButton;
-    public Button pauseFXButton;
-    public GameObject pauseMusicSliderPanel;
-    public GameObject pauseFXSliderPanel;
-    public Slider pauseMusicSlider;
-    public Slider pauseFXSlider;
-
+    public Button pauseMuteButton;
 
     private void Awake()
     {
@@ -76,12 +53,17 @@ public class UIManager : MonoBehaviour
             return;
         }
         ShowMainMenu();
-        SetupVolumeControls();
+        SetupAudioControls();
     }
 
     public void ShowMainMenu()
     {
-        AudioManager.Instance.PlayMenuMusic();
+        // Play menu music when returning to main menu
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayMenuMusic();
+        }
+
         HideAllPanels();
 
         if (GameManager.Instance != null)
@@ -92,6 +74,7 @@ public class UIManager : MonoBehaviour
         ToggleHUD(false); // Hide the HUD in main menu
         mainMenuPanel.SetActive(true);
         Time.timeScale = 1;
+        isGamePaused = false;
     }
     public void ShowHowToPlay()
     {
@@ -171,129 +154,71 @@ public class UIManager : MonoBehaviour
 
     public void StartGame()
     {
-        AudioManager.Instance.PlayGameplayMusic();
+        // Play gameplay music when starting the game
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayGameplayMusic();
+        }
+
         HideAllPanels();
-
-        // Show the HUD for gameplay
         ToggleHUD(true);
-        Debug.Log("Attempting to show HUD for gameplay");
 
-        // Activate the specific game panel based on current selections
-        currentGamePanel = GetGamePanelForOperationAndDifficulty(currentOperationStr, currentDifficultyStr);
+        gamePanel.SetActive(true);
+        SetupDisksInCurrentPanel();
 
-        if (currentGamePanel != null)
+        if (GameManager.Instance != null)
         {
-            currentGamePanel.SetActive(true);
-            Debug.Log($"Activated game panel: {currentGamePanel.name}");
-
-            // Find and initialize the disks in the current panel
-            SetupDisksInCurrentPanel();
-
-            // Always reset game state when starting a new game
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.GenerateTargetNumber();
-                GameManager.Instance.ResetTimer();
-                GameManager.Instance.ResumeTimer(); // Explicitly start the timer
-            }
+            GameManager.Instance.GenerateTargetNumber();
+            GameManager.Instance.ResetTimer();
+            GameManager.Instance.ResumeTimer();
         }
-        else
-        {
-            Debug.LogError($"Game panel not found for operation: {currentOperationStr}, difficulty: {currentDifficultyStr}");
-        }
+
+        isGamePaused = false;
     }
-
     private GameObject GetGamePanelForOperationAndDifficulty(string operation, string difficulty)
     {
-        // Standardized approach to get the correct panel
-        operation = char.ToUpper(operation[0]) + operation.Substring(1).ToLower();
-        difficulty = char.ToUpper(difficulty[0]) + difficulty.Substring(1).ToLower();
-
-        switch (operation)
-        {
-            case "Addition":
-                switch (difficulty)
-                {
-                    case "Easy": return gamePanel_Addition_Easy;
-                    case "Medium": return gamePanel_Addition_Medium;
-                    case "Hard": return gamePanel_Addition_Hard;
-                }
-                break;
-            case "Subtraction":
-                switch (difficulty)
-                {
-                    case "Easy": return gamePanel_Subtraction_Easy;
-                    case "Medium": return gamePanel_Subtraction_Medium;
-                    case "Hard": return gamePanel_Subtraction_Hard;
-                }
-                break;
-            case "Multiplication":
-                switch (difficulty)
-                {
-                    case "Easy": return gamePanel_Multiplication_Easy;
-                    case "Medium": return gamePanel_Multiplication_Medium;
-                    case "Hard": return gamePanel_Multiplication_Hard;
-                }
-                break;
-            case "Division":
-                switch (difficulty)
-                {
-                    case "Easy": return gamePanel_Division_Easy;
-                    case "Medium": return gamePanel_Division_Medium;
-                    case "Hard": return gamePanel_Division_Hard;
-                }
-                break;
-        }
-
         return null;
     }
 
     private void SetupDisksInCurrentPanel()
     {
-        if (currentGamePanel == null) return;
-
-        // Find the disks in the current game panel
-        DiskRotation[] disks = currentGamePanel.GetComponentsInChildren<DiskRotation>(true);
-
+        DiskRotation[] disks = gamePanel.GetComponentsInChildren<DiskRotation>(true);
         foreach (DiskRotation disk in disks)
         {
-            // Reset disk position
             disk.ResetDiskPosition();
-            // Refresh the disk numbers based on current operation and difficulty
             disk.RefreshDisk();
         }
-
-        Debug.Log($"Found and set up {disks.Length} disks in the current panel");
     }
 
     public void TogglePause()
     {
-        bool isPaused = pausePanel.activeSelf;
-        pausePanel.SetActive(!isPaused);
-        Time.timeScale = isPaused ? 1 : 0;
+        isGamePaused = !isGamePaused;
+        pausePanel.SetActive(isGamePaused);
+
+        // Toggle gamePanel visibility based on pause state
+        if (gamePanel != null)
+            gamePanel.SetActive(!isGamePaused);
+
+        Time.timeScale = isGamePaused ? 0 : 1;
 
         // Set up audio controls if we're showing the pause panel
-        if (!isPaused)
+        if (isGamePaused)
         {
             SetupPauseScreenAudioControls();
+
+            // Pause the timer when game is paused
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.PauseTimer();
+            }
         }
         else
         {
-            // Hide slider panels when unpausing
-            if (pauseMusicSliderPanel != null)
-                pauseMusicSliderPanel.SetActive(false);
-
-            if (pauseFXSliderPanel != null)
-                pauseFXSliderPanel.SetActive(false);
-        }
-
-        // Add these lines:
-        if (GameManager.Instance != null)
-        {
-            if (isPaused)
+            // Resume the timer when game is unpaused
+            if (GameManager.Instance != null)
+            {
                 GameManager.Instance.ResumeTimer();
-            else
-                GameManager.Instance.PauseTimer();
+            }
         }
     }
     public void ShowFeedback(bool isCorrect)
@@ -301,8 +226,6 @@ public class UIManager : MonoBehaviour
         if (feedbackPanel != null)
         {
             feedbackPanel.SetActive(true);
-
-
 
             if (isCorrect)
             {
@@ -349,6 +272,8 @@ public class UIManager : MonoBehaviour
                 string difficultyName = GameManager.Instance.currentDifficulty.ToString();
                 highScoreText.text = $"High Score ({operationName} {difficultyName}): {highScore}";
             }
+
+            isGamePaused = false;
         }
     }
     private void HideFeedback()
@@ -364,23 +289,11 @@ public class UIManager : MonoBehaviour
         if (difficultyMenuPanel != null) difficultyMenuPanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
 
-        if (gamePanel_Addition_Easy != null) gamePanel_Addition_Easy.SetActive(false);
-        if (gamePanel_Addition_Medium != null) gamePanel_Addition_Medium.SetActive(false);
-        if (gamePanel_Addition_Hard != null) gamePanel_Addition_Hard.SetActive(false);
-        if (gamePanel_Subtraction_Easy != null) gamePanel_Subtraction_Easy.SetActive(false);
-        if (gamePanel_Subtraction_Medium != null) gamePanel_Subtraction_Medium.SetActive(false);
-        if (gamePanel_Subtraction_Hard != null) gamePanel_Subtraction_Hard.SetActive(false);
-        if (gamePanel_Multiplication_Easy != null) gamePanel_Multiplication_Easy.SetActive(false);
-        if (gamePanel_Multiplication_Medium != null) gamePanel_Multiplication_Medium.SetActive(false);
-        if (gamePanel_Multiplication_Hard != null) gamePanel_Multiplication_Hard.SetActive(false);
-        if (gamePanel_Division_Easy != null) gamePanel_Division_Easy.SetActive(false);
-        if (gamePanel_Division_Medium != null) gamePanel_Division_Medium.SetActive(false);
-        if (gamePanel_Division_Hard != null) gamePanel_Division_Hard.SetActive(false);
+        if (gamePanel != null) gamePanel.SetActive(false);
 
         if (pausePanel != null) pausePanel.SetActive(false);
         if (feedbackPanel != null) feedbackPanel.SetActive(false);
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
-
     }
 
     // Button click handlers
@@ -413,25 +326,27 @@ public class UIManager : MonoBehaviour
 
     public void OnBackButtonClicked()
     {
-        // Determine which panel is active and go back accordingly
+     
         if (operationPickingPanel.activeSelf)
         {
-            ShowMainMenu();
+            ShowMainMenu(); 
         }
         else if (difficultyMenuPanel.activeSelf)
         {
-            ShowOperationMenu();
+            ShowOperationMenu(); 
         }
         else if (pausePanel.activeSelf)
         {
-            TogglePause(); // Resume game
+            TogglePause(); 
+        }
+        else if (howToPlayPanel.activeSelf)
+        {
         }
         else
         {
-            ShowMainMenu();
+            ShowMainMenu(); 
         }
     }
-
     public void OnExitToMainMenu()
     {
         if (GameManager.Instance != null)
@@ -448,6 +363,7 @@ public class UIManager : MonoBehaviour
         {
             pausePanel.SetActive(false);
             Time.timeScale = 1;
+            isGamePaused = false;
         }
 
         // Check if operation and difficulty are set, if not use defaults
@@ -484,11 +400,11 @@ public class UIManager : MonoBehaviour
         }
     }
 
-
-    public void SetupVolumeControls()
+    // Audio Controls Methods
+    public void SetupAudioControls()
     {
         // Find references if not assigned
-        if (musicToggleButton == null)
+        if (musicButton == null || muteButton == null)
         {
             Canvas mainCanvas = FindObjectOfType<Canvas>();
             if (mainCanvas != null)
@@ -496,29 +412,21 @@ public class UIManager : MonoBehaviour
                 Transform startMenuPanel = mainCanvas.transform.Find("Start_Main_Menu_Panel");
                 if (startMenuPanel != null)
                 {
-                    musicToggleButton = startMenuPanel.Find("Music_Button")?.GetComponent<Button>();
-                    volumeSliderPanel = startMenuPanel.Find("VolumeSliderPanel")?.gameObject;
-
-                    if (volumeSliderPanel != null)
-                    {
-                        volumeSlider = volumeSliderPanel.GetComponentInChildren<Slider>();
-
-                        // Set initial state
-                        volumeSliderPanel.SetActive(false);
-
-                        // Connect slider to volume control
-                        if (volumeSlider != null && AudioManager.Instance != null)
-                        {
-                            volumeSlider.value = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
-                            volumeSlider.onValueChanged.AddListener(delegate { AudioManager.Instance.SetMusicVolume(volumeSlider.value); });
-                        }
-                    }
+                    musicButton = startMenuPanel.Find("Music_Button")?.GetComponent<Button>();
+                    muteButton = startMenuPanel.Find("Mute_Button")?.GetComponent<Button>();
 
                     // Set up music button
-                    if (musicToggleButton != null)
+                    if (musicButton != null)
                     {
-                        musicToggleButton.onClick.RemoveAllListeners();
-                        musicToggleButton.onClick.AddListener(ToggleVolumePanel);
+                        musicButton.onClick.RemoveAllListeners();
+                        musicButton.onClick.AddListener(OnMusicButtonClicked);
+                    }
+
+                    // Set up mute button
+                    if (muteButton != null)
+                    {
+                        muteButton.onClick.RemoveAllListeners();
+                        muteButton.onClick.AddListener(OnMuteButtonClicked);
                     }
                 }
             }
@@ -534,132 +442,37 @@ public class UIManager : MonoBehaviour
             if (pauseMusicButton == null)
                 pauseMusicButton = pausePanel.transform.Find("Music_Button")?.GetComponent<Button>();
 
-            if (pauseFXButton == null)
-                pauseFXButton = pausePanel.transform.Find("FX_Button")?.GetComponent<Button>();
-
-            // Try to find slider panels if not assigned
-            if (pauseMusicSliderPanel == null)
-                pauseMusicSliderPanel = pausePanel.transform.Find("MusicSliderPanel")?.gameObject;
-
-            if (pauseFXSliderPanel == null)
-                pauseFXSliderPanel = pausePanel.transform.Find("FXSliderPanel")?.gameObject;
-
-            // Try to find sliders if not assigned
-            if (pauseMusicSlider == null && pauseMusicSliderPanel != null)
-                pauseMusicSlider = pauseMusicSliderPanel.GetComponentInChildren<Slider>();
-
-            if (pauseFXSlider == null && pauseFXSliderPanel != null)
-                pauseFXSlider = pauseFXSliderPanel.GetComponentInChildren<Slider>();
+            if (pauseMuteButton == null)
+                pauseMuteButton = pausePanel.transform.Find("Mute_Button")?.GetComponent<Button>();
 
             // Set up button listeners
             if (pauseMusicButton != null)
             {
                 pauseMusicButton.onClick.RemoveAllListeners();
-                pauseMusicButton.onClick.AddListener(TogglePauseMusicSliderPanel);
+                pauseMusicButton.onClick.AddListener(OnMusicButtonClicked);
             }
 
-            if (pauseFXButton != null)
+            if (pauseMuteButton != null)
             {
-                pauseFXButton.onClick.RemoveAllListeners();
-                pauseFXButton.onClick.AddListener(TogglePauseFXSliderPanel);
+                pauseMuteButton.onClick.RemoveAllListeners();
+                pauseMuteButton.onClick.AddListener(OnMuteButtonClicked);
             }
-
-            // Set up slider listeners
-            if (pauseMusicSlider != null)
-            {
-                pauseMusicSlider.value = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
-                pauseMusicSlider.onValueChanged.RemoveAllListeners();
-                pauseMusicSlider.onValueChanged.AddListener(OnPauseMusicVolumeChanged);
-            }
-
-            if (pauseFXSlider != null)
-            {
-                pauseFXSlider.value = PlayerPrefs.GetFloat("FXVolume", 1.0f);
-                pauseFXSlider.onValueChanged.RemoveAllListeners();
-                pauseFXSlider.onValueChanged.AddListener(OnPauseFXVolumeChanged);
-            }
-
-            // Hide slider panels initially
-            if (pauseMusicSliderPanel != null)
-                pauseMusicSliderPanel.SetActive(false);
-
-            if (pauseFXSliderPanel != null)
-                pauseFXSliderPanel.SetActive(false);
         }
     }
 
-    public void TogglePauseMusicSliderPanel()
-    {
-        if (pauseMusicSliderPanel != null)
-        {
-            // Hide FX slider panel if it's visible
-            if (pauseFXSliderPanel != null && pauseFXSliderPanel.activeSelf)
-                pauseFXSliderPanel.SetActive(false);
-
-            // Toggle music slider panel
-            pauseMusicSliderPanel.SetActive(!pauseMusicSliderPanel.activeSelf);
-
-            // Update slider value when showing
-            if (pauseMusicSliderPanel.activeSelf && pauseMusicSlider != null)
-                pauseMusicSlider.value = PlayerPrefs.GetFloat("MusicVolume", 0.6f);
-        }
-    }
-
-    public void TogglePauseFXSliderPanel()
-    {
-        if (pauseFXSliderPanel != null)
-        {
-            // Hide music slider panel if it's visible
-            if (pauseMusicSliderPanel != null && pauseMusicSliderPanel.activeSelf)
-                pauseMusicSliderPanel.SetActive(false);
-
-            // Toggle FX slider panel
-            pauseFXSliderPanel.SetActive(!pauseFXSliderPanel.activeSelf);
-
-            // Update slider value when showing
-            if (pauseFXSliderPanel.activeSelf && pauseFXSlider != null)
-                pauseFXSlider.value = PlayerPrefs.GetFloat("FXVolume", 1.0f);
-        }
-    }
-
-    private void OnPauseMusicVolumeChanged(float value)
+    public void OnMusicButtonClicked()
     {
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.SetMusicVolume(value);
+            AudioManager.Instance.EnableMusic();
         }
     }
 
-    private void OnPauseFXVolumeChanged(float value)
+    public void OnMuteButtonClicked()
     {
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.SetFXVolume(value);
+            AudioManager.Instance.DisableMusic();
         }
     }
-
-    public void ToggleVolumePanel()
-    {
-        if (volumeSliderPanel != null)
-        {
-            bool isActive = volumeSliderPanel.activeSelf;
-            volumeSliderPanel.SetActive(!isActive);
-        }
-        else
-        {
-            Debug.LogWarning("Volume slider panel reference not found!");
-        }
-    }
-
-    #endregion
-
-
-
-
-
-
-
-
-
-
 }
