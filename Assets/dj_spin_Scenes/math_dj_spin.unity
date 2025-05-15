@@ -285,7 +285,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 82.144, y: 363}
+  m_AnchoredPosition: {x: 82.144, y: 377}
   m_SizeDelta: {x: 410.98, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &64426659
@@ -2549,8 +2549,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 134.25366, y: 49.569874}
-  m_SizeDelta: {x: 3222.06, y: 1505.62}
+  m_AnchoredPosition: {x: 60.25766, y: 7.94693}
+  m_SizeDelta: {x: 3311.13, y: 1862.51}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &465855392
 MonoBehaviour:
@@ -3137,7 +3137,7 @@ Transform:
   m_GameObject: {fileID: 564001914}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -960.04, y: -538.57, z: 0}
+  m_LocalPosition: {x: -960.04, y: -538.76, z: 0}
   m_LocalScale: {x: 1, y: 1.8089498, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3323,35 +3323,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 657065784}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d19a2d54ca5c884093cea96b436cb22, type: 3}
+  m_Script: {fileID: 11500000, guid: 32b37df1c8b31634ea999a2a285d53f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   menuMusic: {fileID: 8300000, guid: c69579134267fc64a99efc4732765305, type: 3}
   gameplayMusic: {fileID: 8300000, guid: 7ac3c80f0986f4a468f48cce884e796f, type: 3}
-  musicVolume: 0.505
+  musicVolume: 0.6
   fxVolume: 1
   sounds:
   - name: Correct
     clip: {fileID: 8300000, guid: 85b53680e453c57488dfddd82b1637ae, type: 3}
-    volume: 0.219
+    volume: 0.168
     pitch: 0
     loop: 0
     source: {fileID: 0}
   - name: Incorrect
     clip: {fileID: 8300000, guid: 5431d601e327e9e4ea838e884851b0bd, type: 3}
-    volume: 0.219
+    volume: 0.152
     pitch: 0
     loop: 0
     source: {fileID: 0}
   - name: diskRotation
     clip: {fileID: 8300000, guid: 0cbfc19a2b74f8143955f3b69469b6a0, type: 3}
-    volume: 0.654
-    pitch: 0
-    loop: 1
-    source: {fileID: 0}
-  - name: diskRotation
-    clip: {fileID: 8300000, guid: 0cbfc19a2b74f8143955f3b69469b6a0, type: 3}
-    volume: 0.654
+    volume: 0
     pitch: 0
     loop: 1
     source: {fileID: 0}
@@ -4748,7 +4742,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 989829801}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4ff023bd68dbd84d99128d93faf7176, type: 3}
+  m_Script: {fileID: 11500000, guid: ff5a45d04f9cfca40b3713daaa387911, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   targetNumberText: {fileID: 64426659}
@@ -4758,7 +4752,7 @@ MonoBehaviour:
   score: 0
   LeftSelectedNumber: 0
   RightSelectedNumber: 0
-  currentOperator: 
+  currentOperator: +
   currentDifficulty: 0
   currentOperation: 0
   correctSound: {fileID: 0}
