@@ -2,7 +2,6 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
@@ -14,12 +13,16 @@ public class UIManager : MonoBehaviour
     public GameObject difficultyMenuPanel;
     public GameObject gameOverPanel;
     public GameObject howToPlayPanel;
+    public GameObject loadingScreenPanel;
 
     public GameObject gamePanel;
 
     // Common game UI elements
     public GameObject pausePanel;
     public GameObject feedbackPanel;
+
+    // Reference to Loading Screen Manager
+    private LoadingScreenManager loadingScreenManager;
 
     // Feedback visuals
     public Sprite correctSprite;
@@ -35,11 +38,11 @@ public class UIManager : MonoBehaviour
     // Flag to track if game is paused
     private bool isGamePaused = false;
 
-    // Audio UI References
-    public Button musicButton;
-    public Button muteButton;
+    // Audio UI References - Main Menu
+    public Button mainMenuMusicButton;
+    public Button mainMenuMuteButton;
 
-    // Pause Screen Audio Controls
+    // Audio UI References - Pause Screen
     public Button pauseMusicButton;
     public Button pauseMuteButton;
 
@@ -52,8 +55,81 @@ public class UIManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        // Validate the loading screen panel reference first
+        if (loadingScreenPanel == null)
+        {
+            // Try to find it by name in the scene
+            loadingScreenPanel = GameObject.Find("LoadingScreenPanel");
+
+            if (loadingScreenPanel == null)
+            {
+                Debug.LogError("LoadingScreenPanel is missing! Creating a temporary panel.");
+                // Create a temporary panel - this is a fallback solution
+                loadingScreenPanel = new GameObject("LoadingScreenPanel");
+                loadingScreenPanel.transform.SetParent(transform, false);
+            }
+        }
+
+        // Get the loading screen manager component
+        loadingScreenManager = loadingScreenPanel.GetComponent<LoadingScreenManager>();
+        if (loadingScreenManager == null)
+        {
+            loadingScreenManager = loadingScreenPanel.AddComponent<LoadingScreenManager>();
+            Debug.LogWarning("LoadingScreenManager component was missing from loadingScreenPanel. Added component automatically.");
+        }
+
         ShowMainMenu();
-        SetupAudioControls();
+        FindAllAudioButtons();
+        SetupAllAudioButtons();
+    }
+
+    // Find all audio control buttons in the scene
+    private void FindAllAudioButtons()
+    {
+        // Find main menu audio buttons
+        if (mainMenuPanel != null)
+        {
+            mainMenuMusicButton = mainMenuPanel.transform.Find("music_button")?.GetComponent<Button>();
+            mainMenuMuteButton = mainMenuPanel.transform.Find("mute_button")?.GetComponent<Button>();
+        }
+
+        // Find pause panel audio buttons
+        if (pausePanel != null)
+        {
+            pauseMusicButton = pausePanel.transform.Find("music_button")?.GetComponent<Button>();
+            pauseMuteButton = pausePanel.transform.Find("mute_button")?.GetComponent<Button>();
+        }
+    }
+
+    // Set up all audio button listeners
+    private void SetupAllAudioButtons()
+    {
+        // Set up main menu audio buttons
+        if (mainMenuMusicButton != null)
+        {
+            mainMenuMusicButton.onClick.RemoveAllListeners();
+            mainMenuMusicButton.onClick.AddListener(OnMusicButtonClicked);
+        }
+
+        if (mainMenuMuteButton != null)
+        {
+            mainMenuMuteButton.onClick.RemoveAllListeners();
+            mainMenuMuteButton.onClick.AddListener(OnMuteButtonClicked);
+        }
+
+        // Set up pause menu audio buttons
+        if (pauseMusicButton != null)
+        {
+            pauseMusicButton.onClick.RemoveAllListeners();
+            pauseMusicButton.onClick.AddListener(OnMusicButtonClicked);
+        }
+
+        if (pauseMuteButton != null)
+        {
+            pauseMuteButton.onClick.RemoveAllListeners();
+            pauseMuteButton.onClick.AddListener(OnMuteButtonClicked);
+        }
     }
 
     public void ShowMainMenu()
@@ -76,6 +152,7 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 1;
         isGamePaused = false;
     }
+
     public void ShowHowToPlay()
     {
         HideAllPanels();
@@ -126,9 +203,58 @@ public class UIManager : MonoBehaviour
             GameManager.Instance.SetDifficulty(difficulty);
         }
 
-        // Start the game
-        StartGame();
+        // Show loading screen before starting the game
+        ShowLoadingScreen();
     }
+
+    // Updated method to show loading screen
+    private void ShowLoadingScreen()
+    {
+        HideAllPanels();
+
+        // Play loading sound if you have one
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySound("Button");
+        }
+
+        // Validate loading screen panel
+        if (loadingScreenPanel == null)
+        {
+            Debug.LogError("Loading screen panel reference lost! Trying to find it.");
+            loadingScreenPanel = GameObject.Find("LoadingScreenPanel");
+
+            // If we still can't find it, create a fallback panel
+            if (loadingScreenPanel == null)
+            {
+                Debug.LogError("Creating fallback loading screen panel");
+                loadingScreenPanel = new GameObject("LoadingScreenPanel");
+                loadingScreenPanel.transform.SetParent(transform, false);
+                loadingScreenManager = loadingScreenPanel.AddComponent<LoadingScreenManager>();
+            }
+        }
+
+        // Verify the loading screen manager component
+        if (loadingScreenManager == null)
+        {
+            loadingScreenManager = loadingScreenPanel.GetComponent<LoadingScreenManager>();
+
+            if (loadingScreenManager == null)
+            {
+                Debug.LogError("LoadingScreenManager component missing, adding it now");
+                loadingScreenManager = loadingScreenPanel.AddComponent<LoadingScreenManager>();
+            }
+        }
+
+        // Ensure the panel is active before starting the coroutine
+        loadingScreenPanel.SetActive(true);
+
+        Debug.Log("Starting loading screen coroutine");
+
+        // Start the loading coroutine
+        StartCoroutine(loadingScreenManager.ShowLoadingScreen(StartGame));
+    }
+
     private GameManager.Operation GetOperationFromString(string operationStr)
     {
         switch (operationStr.ToLower())
@@ -154,6 +280,8 @@ public class UIManager : MonoBehaviour
 
     public void StartGame()
     {
+        Debug.Log("Starting game after loading screen");
+
         // Play gameplay music when starting the game
         if (AudioManager.Instance != null)
         {
@@ -175,6 +303,7 @@ public class UIManager : MonoBehaviour
 
         isGamePaused = false;
     }
+
     private GameObject GetGamePanelForOperationAndDifficulty(string operation, string difficulty)
     {
         return null;
@@ -195,18 +324,19 @@ public class UIManager : MonoBehaviour
         isGamePaused = !isGamePaused;
         pausePanel.SetActive(isGamePaused);
 
-        // Toggle gamePanel visibility based on pause state
         if (gamePanel != null)
             gamePanel.SetActive(!isGamePaused);
 
         Time.timeScale = isGamePaused ? 0 : 1;
 
-        // Set up audio controls if we're showing the pause panel
         if (isGamePaused)
         {
-            SetupPauseScreenAudioControls();
+            // Pause the music when entering pause menu
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PauseMusic();
+            }
 
-            // Pause the timer when game is paused
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.PauseTimer();
@@ -214,13 +344,19 @@ public class UIManager : MonoBehaviour
         }
         else
         {
-            // Resume the timer when game is unpaused
+            // Resume the music when exiting pause menu
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.ResumeMusic();
+            }
+
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.ResumeTimer();
             }
         }
     }
+
     public void ShowFeedback(bool isCorrect)
     {
         if (feedbackPanel != null)
@@ -276,6 +412,7 @@ public class UIManager : MonoBehaviour
             isGamePaused = false;
         }
     }
+
     private void HideFeedback()
     {
         if (feedbackPanel != null)
@@ -288,6 +425,7 @@ public class UIManager : MonoBehaviour
         if (operationPickingPanel != null) operationPickingPanel.SetActive(false);
         if (difficultyMenuPanel != null) difficultyMenuPanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+        if (loadingScreenPanel != null) loadingScreenPanel.SetActive(false);
 
         if (gamePanel != null) gamePanel.SetActive(false);
 
@@ -326,33 +464,41 @@ public class UIManager : MonoBehaviour
 
     public void OnBackButtonClicked()
     {
-     
         if (operationPickingPanel.activeSelf)
         {
-            ShowMainMenu(); 
+            ShowMainMenu();
         }
         else if (difficultyMenuPanel.activeSelf)
         {
-            ShowOperationMenu(); 
+            ShowOperationMenu();
         }
         else if (pausePanel.activeSelf)
         {
-            TogglePause(); 
+            TogglePause();
         }
         else if (howToPlayPanel.activeSelf)
         {
+            ShowMainMenu();
         }
         else
         {
-            ShowMainMenu(); 
+            ShowMainMenu();
         }
     }
+
     public void OnExitToMainMenu()
     {
         if (GameManager.Instance != null)
         {
             GameManager.Instance.PauseTimer();
         }
+
+        // Stop the current gameplay music and switch to menu music
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.StopMusic();
+        }
+
         ShowMainMenu();
     }
 
@@ -372,16 +518,10 @@ public class UIManager : MonoBehaviour
         if (string.IsNullOrEmpty(currentDifficultyStr))
             currentDifficultyStr = "easy";
 
-        // Restart current game with same operation and difficulty
-        StartGameWithCurrentSelections();
-
-        // Ensure the timer is reset and running
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.ResetTimer();
-            GameManager.Instance.ResumeTimer();
-        }
+        // Show loading screen before restarting
+        ShowLoadingScreen();
     }
+
     public void ToggleHUD(bool show)
     {
         Canvas mainCanvas = FindObjectOfType<Canvas>();
@@ -401,65 +541,6 @@ public class UIManager : MonoBehaviour
     }
 
     // Audio Controls Methods
-    public void SetupAudioControls()
-    {
-        // Find references if not assigned
-        if (musicButton == null || muteButton == null)
-        {
-            Canvas mainCanvas = FindObjectOfType<Canvas>();
-            if (mainCanvas != null)
-            {
-                Transform startMenuPanel = mainCanvas.transform.Find("Start_Main_Menu_Panel");
-                if (startMenuPanel != null)
-                {
-                    musicButton = startMenuPanel.Find("Music_Button")?.GetComponent<Button>();
-                    muteButton = startMenuPanel.Find("Mute_Button")?.GetComponent<Button>();
-
-                    // Set up music button
-                    if (musicButton != null)
-                    {
-                        musicButton.onClick.RemoveAllListeners();
-                        musicButton.onClick.AddListener(OnMusicButtonClicked);
-                    }
-
-                    // Set up mute button
-                    if (muteButton != null)
-                    {
-                        muteButton.onClick.RemoveAllListeners();
-                        muteButton.onClick.AddListener(OnMuteButtonClicked);
-                    }
-                }
-            }
-        }
-    }
-
-    private void SetupPauseScreenAudioControls()
-    {
-        // Find references if not set
-        if (pausePanel != null)
-        {
-            // Try to find buttons if not assigned
-            if (pauseMusicButton == null)
-                pauseMusicButton = pausePanel.transform.Find("Music_Button")?.GetComponent<Button>();
-
-            if (pauseMuteButton == null)
-                pauseMuteButton = pausePanel.transform.Find("Mute_Button")?.GetComponent<Button>();
-
-            // Set up button listeners
-            if (pauseMusicButton != null)
-            {
-                pauseMusicButton.onClick.RemoveAllListeners();
-                pauseMusicButton.onClick.AddListener(OnMusicButtonClicked);
-            }
-
-            if (pauseMuteButton != null)
-            {
-                pauseMuteButton.onClick.RemoveAllListeners();
-                pauseMuteButton.onClick.AddListener(OnMuteButtonClicked);
-            }
-        }
-    }
-
     public void OnMusicButtonClicked()
     {
         if (AudioManager.Instance != null)

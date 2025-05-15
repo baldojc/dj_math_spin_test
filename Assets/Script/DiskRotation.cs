@@ -30,19 +30,19 @@ public class DiskRotation : MonoBehaviour
     private bool isPlayingSound = false;
     private float targetVolume = 0f;
     private float targetPitch = 1f;
-    private float smoothFactor = 8f; // Higher = faster audio transition
+    private float smoothFactor = 8f; 
     private float rotationVelocity = 0f;
     private float rotationIdleTime = 0f;
-    private const float ROTATION_TIMEOUT = 0.1f; // Time without rotation before fading out
+    private const float ROTATION_TIMEOUT = 0.1f; 
 
     public TextMeshPro[] numberTexts;
 
     private void Awake()
     {
-        // Get reference to the camera
+        
         mainCamera = Camera.main;
 
-        // Initialize Input System actions
+       
         pointerPosition = new InputAction("PointerPosition", binding: "<Pointer>/position");
         pointerPress = new InputAction("PointerPress", binding: "<Pointer>/press");
 
@@ -53,11 +53,11 @@ public class DiskRotation : MonoBehaviour
 
     private void OnEnable()
     {
-        // Enable Input actions when script is enabled
+       
         pointerPosition.Enable();
         pointerPress.Enable();
 
-        // Enable enhanced touch support for better mobile handling
+       
         EnhancedTouchSupport.Enable();
         Touch.onFingerDown += OnFingerDown;
         Touch.onFingerMove += OnFingerMove;
@@ -66,11 +66,11 @@ public class DiskRotation : MonoBehaviour
 
     private void OnDisable()
     {
-        // Disable Input actions when script is disabled
+     
         pointerPosition.Disable();
         pointerPress.Disable();
 
-        // Disable enhanced touch
+        
         Touch.onFingerDown -= OnFingerDown;
         Touch.onFingerMove -= OnFingerMove;
         Touch.onFingerUp -= OnFingerUp;
@@ -81,7 +81,6 @@ public class DiskRotation : MonoBehaviour
 
     void Start()
     {
-        // Add this debug check
         if (GameManager.Instance == null)
         {
             Debug.LogWarning("GameManager.Instance is null in Start()!");
@@ -101,10 +100,10 @@ public class DiskRotation : MonoBehaviour
 
     void SetupAudioSource()
     {
-        // Create a dedicated audio source for rotation sound
+       
         rotationAudioSource = gameObject.AddComponent<AudioSource>();
 
-        // Find the sound in AudioManager
+     
         if (audioManager != null)
         {
             AudioManager.Sound sound = audioManager.sounds.Find(s => s.name == rotationSoundName);
@@ -125,7 +124,7 @@ public class DiskRotation : MonoBehaviour
 
     void Update()
     {
-        // Handle mouse/pointer input in non-mobile platforms
+       
         if (Touchscreen.current == null || !EnhancedTouchSupport.enabled)
         {
             HandlePointerInput();
@@ -168,14 +167,14 @@ public class DiskRotation : MonoBehaviour
         {
             isDragging = false;
             SelectCurrentNumber();
-            targetVolume = 0f; // Start fading out rotation sound
+            targetVolume = 0f; 
         }
     }
 
     // Enhanced Touch handlers for mobile
     private void OnFingerDown(Finger finger)
     {
-        // Only process first touch
+        
         if (finger.index != 0) return;
 
         Vector2 touchWorldPos = mainCamera.ScreenToWorldPoint(finger.screenPosition);
@@ -189,7 +188,7 @@ public class DiskRotation : MonoBehaviour
 
     private void OnFingerMove(Finger finger)
     {
-        // Only process first touch
+      
         if (finger.index != 0 || !isDragging) return;
 
         Vector2 touchWorldPos = mainCamera.ScreenToWorldPoint(finger.screenPosition);
@@ -199,17 +198,16 @@ public class DiskRotation : MonoBehaviour
 
     private void OnFingerUp(Finger finger)
     {
-        // Only process first touch
+       
         if (finger.index != 0 || !isDragging) return;
 
         isDragging = false;
         SelectCurrentNumber();
-        targetVolume = 0f; // Start fading out rotation sound
+        targetVolume = 0f; 
     }
 
     void UpdateRotationSound()
     {
-        // If we're not rotating anymore, start counting idle time
         if (Mathf.Approximately(rotationVelocity, 0f))
         {
             rotationIdleTime += Time.deltaTime;
@@ -224,14 +222,12 @@ public class DiskRotation : MonoBehaviour
             rotationIdleTime = 0f;
         }
 
-        // Start playing if needed
         if (targetVolume > 0 && !isPlayingSound && rotationAudioSource.clip != null)
         {
             rotationAudioSource.Play();
             isPlayingSound = true;
         }
 
-        // Smooth volume and pitch transitions
         rotationAudioSource.volume = Mathf.Lerp(rotationAudioSource.volume, targetVolume, Time.deltaTime * smoothFactor);
         rotationAudioSource.pitch = Mathf.Lerp(rotationAudioSource.pitch, targetPitch, Time.deltaTime * smoothFactor);
 
@@ -327,22 +323,16 @@ public class DiskRotation : MonoBehaviour
 
         if (rotationSpeed > 0.1f)
         {
-            // Calculate volume based on rotation speed
             float speedFactor = Mathf.Clamp01(rotationSpeed / 15f);
 
-            // Direction affects volume and pitch
             if (rotationDelta > 0) // Counter-clockwise (left) rotation
             {
-                // Higher volume for left rotation
                 targetVolume = Mathf.Lerp(minVolume, maxVolume, speedFactor);
-                // Higher pitch for left rotation
                 targetPitch = Mathf.Lerp(1.0f, maxPitch, speedFactor);
             }
-            else // Clockwise (right) rotation
+            else 
             {
-                // Lower volume for right rotation (calmer sound)
                 targetVolume = Mathf.Lerp(minVolume, minVolume + (maxVolume - minVolume) * 0.5f, speedFactor);
-                // Lower pitch for right rotation
                 targetPitch = Mathf.Lerp(1.0f, minPitch, speedFactor);
             }
         }

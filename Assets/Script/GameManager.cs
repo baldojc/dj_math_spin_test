@@ -326,7 +326,7 @@ public class GameManager : MonoBehaviour
             Debug.LogWarning("Disk numbers not found for key: " + mapKey);
             // Use a fallback option
             targetNumber = Random.Range(1, 20);
-            targetNumberText.text = "Target: " + targetNumber;
+            targetNumberText.text = "Target " + targetNumber;
             return;
         }
 
@@ -348,7 +348,6 @@ public class GameManager : MonoBehaviour
             validTargets.Remove(recent);
         }
 
-        // If we've exhausted all possible numbers, allow reusing older ones
         if (validTargets.Count == 0)
         {
             validTargets = new List<int>(allPossibleResults);
@@ -389,7 +388,6 @@ public class GameManager : MonoBehaviour
                         break;
 
                     case Operation.Division:
-                        // For division, find a valid division pair with whole number result
                         List<KeyValuePair<int, int>> validDivisionPairs = new List<KeyValuePair<int, int>>();
 
                         for (int i = 0; i < leftDiskNumbers.Length; i++)
@@ -421,7 +419,6 @@ public class GameManager : MonoBehaviour
                         break;
                 }
 
-                // Check if this fallback target is in our recent list
                 if (!IsTargetRepeated(targetNumber))
                 {
                     foundValidTarget = true;
@@ -429,10 +426,9 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Add to recent targets list
         AddToRecentTargets(targetNumber);
 
-        targetNumberText.text = "Target: " + targetNumber;
+        targetNumberText.text = "Target " + targetNumber;
         UpdateOperatorImage();
         UpdateSelectedNumbersUI();
 
@@ -501,7 +497,6 @@ public class GameManager : MonoBehaviour
 
         if (isCorrect)
         {
-            // Increase streak count and calculate bonus
             currentStreak++;
             int streakBonus = Mathf.Min(currentStreak - 1, MAX_STREAK_BONUS);
             int pointsToAdd = 10 + streakBonus;
@@ -513,22 +508,17 @@ public class GameManager : MonoBehaviour
             if (streakBonus > 0)
             {
                 Debug.Log($"Streak: {currentStreak}! Bonus points: +{streakBonus}");
-                // Optional: Show streak UI feedback
             }
 
-            // Play correct sound with AudioManager
             AudioManager.Instance.PlaySound("Correct");
-            // Optional: Add random pitch variation for DJ effect
             AudioManager.Instance.PlaySound("Correct", pitch: Random.Range(0.95f, 1.05f) + (streakBonus * 0.02f));
 
             GenerateTargetNumber();
         }
         else
         {
-            // Reset streak on wrong answer
             currentStreak = 0;
 
-            // Play incorrect sound with AudioManager
             AudioManager.Instance.PlaySound("Incorrect");
             // Optional: Add record scratch sound
             AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
@@ -548,7 +538,6 @@ public class GameManager : MonoBehaviour
 
     public void InitializeTimer()
     {
-        // Try to find the timer text if it hasn't been set yet
         if (timerText == null)
         {
             Canvas[] canvases = FindObjectsOfType<Canvas>(true);
@@ -601,10 +590,8 @@ public class GameManager : MonoBehaviour
         timerActive = false;
         Debug.Log("Game over! Final score: " + score);
 
-        // Get high score key based on current operation and difficulty
         string highScoreKey = $"HighScore_{currentOperation}_{currentDifficulty}";
 
-        // Save high score if current score is higher
         int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
         if (score > highScore)
         {
@@ -627,7 +614,6 @@ public class GameManager : MonoBehaviour
 
     #endregion
 
-    // Provide access to disk number arrays for other scripts
     public int[] GetDiskNumbers(bool isLeftDisk)
     {
         string mapKey = $"{currentOperation.ToString().ToLower()}_{currentDifficulty.ToString().ToLower()}";

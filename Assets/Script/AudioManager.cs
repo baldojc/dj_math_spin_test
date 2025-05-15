@@ -28,11 +28,7 @@ public class AudioManager : MonoBehaviour
     private float globalVolume = 1f;
     private bool musicEnabled = true;
     private AudioClip currentMusicClip;
-
-    // UI References
-    [Header("UI References")]
-    public Button musicButton;
-    public Button muteButton;
+    private bool wasPlayingBeforePause = false;
 
     void Awake()
     {
@@ -45,57 +41,6 @@ public class AudioManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
-        }
-    }
-
-    void Start()
-    {
-        // Find UI references if not set
-        FindUIReferences();
-    }
-
-
-
-    void FindUIReferences()
-    {
-        // Only search for references if they're not assigned
-        if (musicButton == null || muteButton == null)
-        {
-            Canvas[] canvases = FindObjectsOfType<Canvas>(true);
-            foreach (Canvas canvas in canvases)
-            {
-                Transform mainMenuPanel = canvas.transform.Find("Start_Main_Menu_Panel");
-                if (mainMenuPanel != null)
-                {
-                    // Look for music_button
-                    Transform musicBtnTransform = mainMenuPanel.Find("music_button");
-                    if (musicBtnTransform != null)
-                    {
-                        musicButton = musicBtnTransform.GetComponent<Button>();
-                        if (musicButton != null)
-                        {
-                            // Add click listener if not already added
-                            musicButton.onClick.RemoveAllListeners();
-                            musicButton.onClick.AddListener(EnableMusic);
-                        }
-                    }
-
-                    // Look for mute_button
-                    Transform muteBtnTransform = mainMenuPanel.Find("mute_button");
-                    if (muteBtnTransform != null)
-                    {
-                        muteButton = muteBtnTransform.GetComponent<Button>();
-                        if (muteButton != null)
-                        {
-                            // Add click listener if not already added
-                            muteButton.onClick.RemoveAllListeners();
-                            muteButton.onClick.AddListener(DisableMusic);
-                        }
-                    }
-
-                    break;
-                }
-            }
         }
     }
 
@@ -131,6 +76,8 @@ public class AudioManager : MonoBehaviour
         {
             if (currentMusicClip == null)
                 PlayMenuMusic();
+            else if (!musicSource.isPlaying && wasPlayingBeforePause)
+                musicSource.Play();
         }
         else
         {
@@ -142,28 +89,64 @@ public class AudioManager : MonoBehaviour
 
     public void PlayMenuMusic()
     {
-        if (!musicEnabled || currentMusicClip == menuMusic) return;
+        if (!musicEnabled) return;
 
-        currentMusicClip = menuMusic;
-        musicSource.clip = menuMusic;
-        musicSource.volume = musicVolume * globalVolume;
-        musicSource.Play();
+        if (currentMusicClip != menuMusic)
+        {
+            currentMusicClip = menuMusic;
+            musicSource.clip = menuMusic;
+            musicSource.volume = musicVolume * globalVolume;
+            musicSource.Play();
+            wasPlayingBeforePause = true;
+        }
+        else if (!musicSource.isPlaying)
+        {
+            musicSource.Play();
+            wasPlayingBeforePause = true;
+        }
     }
 
     public void PlayGameplayMusic()
     {
-        if (!musicEnabled || currentMusicClip == gameplayMusic) return;
+        if (!musicEnabled) return;
 
-        currentMusicClip = gameplayMusic;
-        musicSource.clip = gameplayMusic;
-        musicSource.volume = musicVolume * globalVolume;
-        musicSource.Play();
+        if (currentMusicClip != gameplayMusic)
+        {
+            currentMusicClip = gameplayMusic;
+            musicSource.clip = gameplayMusic;
+            musicSource.volume = musicVolume * globalVolume;
+            musicSource.Play();
+            wasPlayingBeforePause = true;
+        }
+        else if (!musicSource.isPlaying)
+        {
+            musicSource.Play();
+            wasPlayingBeforePause = true;
+        }
+    }
+
+    public void PauseMusic()
+    {
+        if (musicSource.isPlaying)
+        {
+            wasPlayingBeforePause = true;
+            musicSource.Pause();
+        }
+    }
+
+    public void ResumeMusic()
+    {
+        if (musicEnabled && wasPlayingBeforePause)
+        {
+            musicSource.UnPause();
+        }
     }
 
     public void StopMusic()
     {
         musicSource.Stop();
         currentMusicClip = null;
+        wasPlayingBeforePause = false;
     }
 
     public void EnableMusic()
@@ -180,6 +163,14 @@ public class AudioManager : MonoBehaviour
         PlayerPrefs.SetInt("MusicEnabled", 0);
         StopMusic();
         Debug.Log("Music disabled");
+    }
+
+    public void ToggleMusic()
+    {
+        if (musicEnabled)
+            DisableMusic();
+        else
+            EnableMusic();
     }
 
     public void SetMusicVolume(float volume)
@@ -245,8 +236,6 @@ public class AudioManager : MonoBehaviour
     }
 
     #endregion
-
-
 
     void OnApplicationQuit()
     {
