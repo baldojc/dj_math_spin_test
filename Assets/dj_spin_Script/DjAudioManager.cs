@@ -2,9 +2,9 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
-public class AudioManager : MonoBehaviour
+public class DjAudioManager : MonoBehaviour
 {
-    public static AudioManager Instance;
+    public static DjAudioManager Instance;
 
     [System.Serializable]
     public class Sound
@@ -17,8 +17,8 @@ public class AudioManager : MonoBehaviour
         [HideInInspector] public AudioSource source;
     }
 
-    public AudioClip menuMusic; // For Start_Menu, OperatorPicker, Difficulty panels
-    public AudioClip gameplayMusic; // For all gamePanel_* scenes
+    public AudioClip menuMusic; 
+    public AudioClip gameplayMusic; 
     [Range(0f, 1f)] public float musicVolume = 0.6f;
     [Range(0f, 1f)] public float fxVolume = 1.0f;
 
@@ -29,6 +29,15 @@ public class AudioManager : MonoBehaviour
     private bool musicEnabled = true;
     private AudioClip currentMusicClip;
     private bool wasPlayingBeforePause = false;
+
+    private MusicType currentMusicType = MusicType.Menu;
+
+   
+    public enum MusicType
+    {
+        Menu,
+        Gameplay
+    }
 
     void Awake()
     {
@@ -46,12 +55,10 @@ public class AudioManager : MonoBehaviour
 
     void Initialize()
     {
-        // Set up music source
         musicSource = gameObject.AddComponent<AudioSource>();
         musicSource.loop = true;
         musicSource.volume = musicVolume * globalVolume;
 
-        // Set up sound effect sources
         foreach (Sound s in sounds)
         {
             s.source = gameObject.AddComponent<AudioSource>();
@@ -61,7 +68,6 @@ public class AudioManager : MonoBehaviour
             s.source.loop = s.loop;
         }
 
-        // Load saved preferences
         musicEnabled = PlayerPrefs.GetInt("MusicEnabled", 1) == 1;
         fxVolume = PlayerPrefs.GetFloat("FXVolume", 1.0f);
         globalVolume = PlayerPrefs.GetFloat("GlobalVolume", 1f);
@@ -70,14 +76,23 @@ public class AudioManager : MonoBehaviour
         UpdateMusicState();
     }
 
+    
     private void UpdateMusicState()
     {
         if (musicEnabled)
         {
             if (currentMusicClip == null)
-                PlayMenuMusic();
+            {
+               
+                if (currentMusicType == MusicType.Menu)
+                    PlayMenuMusic();
+                else
+                    PlayGameplayMusic();
+            }
             else if (!musicSource.isPlaying && wasPlayingBeforePause)
+            {
                 musicSource.Play();
+            }
         }
         else
         {
@@ -90,6 +105,8 @@ public class AudioManager : MonoBehaviour
     public void PlayMenuMusic()
     {
         if (!musicEnabled) return;
+
+        currentMusicType = MusicType.Menu;
 
         if (currentMusicClip != menuMusic)
         {
@@ -109,6 +126,8 @@ public class AudioManager : MonoBehaviour
     public void PlayGameplayMusic()
     {
         if (!musicEnabled) return;
+
+        currentMusicType = MusicType.Gameplay;
 
         if (currentMusicClip != gameplayMusic)
         {
@@ -177,7 +196,6 @@ public class AudioManager : MonoBehaviour
     {
         musicVolume = Mathf.Clamp01(volume);
 
-        // Update music volume if music source exists
         if (musicSource != null)
         {
             musicSource.volume = musicVolume * globalVolume;
@@ -210,7 +228,6 @@ public class AudioManager : MonoBehaviour
     {
         fxVolume = Mathf.Clamp01(volume);
 
-        // Update all sound effects volumes
         foreach (Sound s in sounds)
         {
             s.source.volume = s.volume * fxVolume * globalVolume;
@@ -223,10 +240,8 @@ public class AudioManager : MonoBehaviour
     {
         globalVolume = Mathf.Clamp01(volume);
 
-        // Update music volume
         musicSource.volume = musicVolume * globalVolume;
 
-        // Update all sound effects volumes
         foreach (Sound s in sounds)
         {
             s.source.volume = s.volume * fxVolume * globalVolume;

@@ -11,8 +11,8 @@ public class DiskRotation : MonoBehaviour
     private int[] numbers;
     private bool isDragging = false;
     private Vector2 lastInputPosition;
-    private GameManager gameManager;
-    private AudioManager audioManager;
+    private DjGameManager gameManager;
+    private DjAudioManager audioManager;
     private Camera mainCamera;
     private InputAction pointerPosition;
     private InputAction pointerPress;
@@ -75,7 +75,7 @@ public class DiskRotation : MonoBehaviour
 
     void Start()
     {
-        if (GameManager.Instance == null)
+        if (DjGameManager.Instance == null)
         {
             Debug.LogWarning("GameManager.Instance is null in Start()!");
         }
@@ -84,8 +84,8 @@ public class DiskRotation : MonoBehaviour
             Debug.Log("GameManager reference found successfully");
         }
 
-        gameManager = GameManager.Instance;
-        audioManager = AudioManager.Instance;
+        gameManager = DjGameManager.Instance;
+        audioManager = DjAudioManager.Instance;
         mainCamera = Camera.main;
         SetupAudioSource();
         UpdateDiskNumbers();
@@ -98,7 +98,7 @@ public class DiskRotation : MonoBehaviour
 
         if (audioManager != null)
         {
-            AudioManager.Sound sound = audioManager.sounds.Find(s => s.name == rotationSoundName);
+            DjAudioManager.Sound sound = audioManager.sounds.Find(s => s.name == rotationSoundName);
             if (sound != null && sound.clip != null)
             {
                 rotationAudioSource.clip = sound.clip;
@@ -232,12 +232,12 @@ public class DiskRotation : MonoBehaviour
     {
         if (gameManager == null)
         {
-            gameManager = GameManager.Instance;
+            gameManager = DjGameManager.Instance;
 
             if (gameManager == null)
             {
                 // Fixed the deprecated method
-                gameManager = Object.FindAnyObjectByType<GameManager>();
+                gameManager = Object.FindAnyObjectByType<DjGameManager>();
 
                 if (gameManager == null)
                 {

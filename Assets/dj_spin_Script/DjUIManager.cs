@@ -3,11 +3,11 @@ using TMPro;
 using System.Collections;
 using UnityEngine.UI;
 
-public class UIManager : MonoBehaviour
+public class DjUIManager : MonoBehaviour
 {
-    public static UIManager Instance;
+    public static DjUIManager Instance;
 
-    // Main Panels
+ 
     public GameObject mainMenuPanel;
     public GameObject operationPickingPanel;
     public GameObject difficultyMenuPanel;
@@ -17,34 +17,37 @@ public class UIManager : MonoBehaviour
 
     public GameObject gamePanel;
 
-    // Common game UI elements
+  
     public GameObject pausePanel;
     public GameObject feedbackPanel;
 
-    // Reference to Loading Screen Manager
+  
     private LoadingScreenManager loadingScreenManager;
 
-    // Feedback visuals
+ 
     public Sprite correctSprite;
     public Sprite incorrectSprite;
 
-    // Current active game panel reference
+ 
     private GameObject currentGamePanel;
 
-    // Current selection
+
     private string currentOperationStr;
     private string currentDifficultyStr;
 
-    // Flag to track if game is paused
+  
     private bool isGamePaused = false;
 
-    // Audio UI References - Main Menu
+ 
     public Button mainMenuMusicButton;
     public Button mainMenuMuteButton;
 
-    // Audio UI References - Pause Screen
+   
     public Button pauseMusicButton;
     public Button pauseMuteButton;
+
+
+    private bool isInGameplay = false;
 
     private void Awake()
     {
@@ -56,22 +59,21 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Validate the loading screen panel reference first
         if (loadingScreenPanel == null)
         {
-            // Try to find it by name in the scene
+     
             loadingScreenPanel = GameObject.Find("LoadingScreenPanel");
 
             if (loadingScreenPanel == null)
             {
                 Debug.LogError("LoadingScreenPanel is missing! Creating a temporary panel.");
-                // Create a temporary panel - this is a fallback solution
+           
                 loadingScreenPanel = new GameObject("LoadingScreenPanel");
                 loadingScreenPanel.transform.SetParent(transform, false);
             }
         }
 
-        // Get the loading screen manager component
+      
         loadingScreenManager = loadingScreenPanel.GetComponent<LoadingScreenManager>();
         if (loadingScreenManager == null)
         {
@@ -84,17 +86,17 @@ public class UIManager : MonoBehaviour
         SetupAllAudioButtons();
     }
 
-    // Find all audio control buttons in the scene
+   
     private void FindAllAudioButtons()
     {
-        // Find main menu audio buttons
+    
         if (mainMenuPanel != null)
         {
             mainMenuMusicButton = mainMenuPanel.transform.Find("music_button")?.GetComponent<Button>();
             mainMenuMuteButton = mainMenuPanel.transform.Find("mute_button")?.GetComponent<Button>();
         }
 
-        // Find pause panel audio buttons
+     
         if (pausePanel != null)
         {
             pauseMusicButton = pausePanel.transform.Find("music_button")?.GetComponent<Button>();
@@ -102,10 +104,10 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    // Set up all audio button listeners
+   
     private void SetupAllAudioButtons()
     {
-        // Set up main menu audio buttons
+      
         if (mainMenuMusicButton != null)
         {
             mainMenuMusicButton.onClick.RemoveAllListeners();
@@ -118,11 +120,11 @@ public class UIManager : MonoBehaviour
             mainMenuMuteButton.onClick.AddListener(OnMuteButtonClicked);
         }
 
-        // Set up pause menu audio buttons
+      
         if (pauseMusicButton != null)
         {
             pauseMusicButton.onClick.RemoveAllListeners();
-            pauseMusicButton.onClick.AddListener(OnMusicButtonClicked);
+            pauseMusicButton.onClick.AddListener(OnPauseMusicButtonClicked);  
         }
 
         if (pauseMuteButton != null)
@@ -134,20 +136,21 @@ public class UIManager : MonoBehaviour
 
     public void ShowMainMenu()
     {
-        // Play menu music when returning to main menu
-        if (AudioManager.Instance != null)
+    
+        if (DjAudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayMenuMusic();
+            DjAudioManager.Instance.PlayMenuMusic();
         }
 
         HideAllPanels();
+        isInGameplay = false;  
 
-        if (GameManager.Instance != null)
+        if (DjGameManager.Instance != null)
         {
-            GameManager.Instance.PauseTimer();
+            DjGameManager.Instance.PauseTimer();
         }
 
-        ToggleHUD(false); // Hide the HUD in main menu
+        ToggleHUD(false); 
         mainMenuPanel.SetActive(true);
         Time.timeScale = 1;
         isGamePaused = false;
@@ -186,45 +189,45 @@ public class UIManager : MonoBehaviour
 
     public void StartGameWithCurrentSelections()
     {
-        // Add null checks for currentOperationStr and currentDifficultyStr
+      
         if (string.IsNullOrEmpty(currentOperationStr))
             currentOperationStr = "addition";
         if (string.IsNullOrEmpty(currentDifficultyStr))
             currentDifficultyStr = "easy";
 
-        // Convert string selections to enum values
-        GameManager.Operation operation = GetOperationFromString(currentOperationStr);
-        GameManager.Difficulty difficulty = GetDifficultyFromString(currentDifficultyStr);
+        
+        DjGameManager.Operation operation = GetOperationFromString(currentOperationStr);
+        DjGameManager.Difficulty difficulty = GetDifficultyFromString(currentDifficultyStr);
 
-        // Set the operation and difficulty in GameManager
-        if (GameManager.Instance != null)
+     
+        if (DjGameManager.Instance != null)
         {
-            GameManager.Instance.SetOperation(operation);
-            GameManager.Instance.SetDifficulty(difficulty);
+            DjGameManager.Instance.SetOperation(operation);
+            DjGameManager.Instance.SetDifficulty(difficulty);
         }
 
-        // Show loading screen before starting the game
+       
         ShowLoadingScreen();
     }
 
-    // Updated method to show loading screen
+   
     private void ShowLoadingScreen()
     {
         HideAllPanels();
 
-        // Play loading sound if you have one
-        if (AudioManager.Instance != null)
+        
+        if (DjAudioManager.Instance != null)
         {
-            AudioManager.Instance.PlaySound("Button");
+            DjAudioManager.Instance.PlaySound("Button");
         }
 
-        // Validate loading screen panel
+      
         if (loadingScreenPanel == null)
         {
             Debug.LogError("Loading screen panel reference lost! Trying to find it.");
             loadingScreenPanel = GameObject.Find("LoadingScreenPanel");
 
-            // If we still can't find it, create a fallback panel
+          
             if (loadingScreenPanel == null)
             {
                 Debug.LogError("Creating fallback loading screen panel");
@@ -234,7 +237,7 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        // Verify the loading screen manager component
+       
         if (loadingScreenManager == null)
         {
             loadingScreenManager = loadingScreenPanel.GetComponent<LoadingScreenManager>();
@@ -246,35 +249,35 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        // Ensure the panel is active before starting the coroutine
+     
         loadingScreenPanel.SetActive(true);
 
         Debug.Log("Starting loading screen coroutine");
 
-        // Start the loading coroutine
+  
         StartCoroutine(loadingScreenManager.ShowLoadingScreen(StartGame));
     }
 
-    private GameManager.Operation GetOperationFromString(string operationStr)
+    private DjGameManager.Operation GetOperationFromString(string operationStr)
     {
         switch (operationStr.ToLower())
         {
-            case "addition": return GameManager.Operation.Addition;
-            case "subtraction": return GameManager.Operation.Subtraction;
-            case "multiplication": return GameManager.Operation.Multiplication;
-            case "division": return GameManager.Operation.Division;
-            default: return GameManager.Operation.Addition;
+            case "addition": return DjGameManager.Operation.Addition;
+            case "subtraction": return DjGameManager.Operation.Subtraction;
+            case "multiplication": return DjGameManager.Operation.Multiplication;
+            case "division": return DjGameManager.Operation.Division;
+            default: return DjGameManager.Operation.Addition;
         }
     }
 
-    private GameManager.Difficulty GetDifficultyFromString(string difficultyStr)
+    private DjGameManager.Difficulty GetDifficultyFromString(string difficultyStr)
     {
         switch (difficultyStr.ToLower())
         {
-            case "easy": return GameManager.Difficulty.Easy;
-            case "medium": return GameManager.Difficulty.Medium;
-            case "hard": return GameManager.Difficulty.Hard;
-            default: return GameManager.Difficulty.Easy;
+            case "easy": return DjGameManager.Difficulty.Easy;
+            case "medium": return DjGameManager.Difficulty.Medium;
+            case "hard": return DjGameManager.Difficulty.Hard;
+            default: return DjGameManager.Difficulty.Easy;
         }
     }
 
@@ -282,10 +285,12 @@ public class UIManager : MonoBehaviour
     {
         Debug.Log("Starting game after loading screen");
 
-        // Play gameplay music when starting the game
-        if (AudioManager.Instance != null)
+        isInGameplay = true; 
+
+     
+        if (DjAudioManager.Instance != null)
         {
-            AudioManager.Instance.PlayGameplayMusic();
+            DjAudioManager.Instance.PlayGameplayMusic();
         }
 
         HideAllPanels();
@@ -294,11 +299,11 @@ public class UIManager : MonoBehaviour
         gamePanel.SetActive(true);
         SetupDisksInCurrentPanel();
 
-        if (GameManager.Instance != null)
+        if (DjGameManager.Instance != null)
         {
-            GameManager.Instance.GenerateTargetNumber();
-            GameManager.Instance.ResetTimer();
-            GameManager.Instance.ResumeTimer();
+            DjGameManager.Instance.GenerateTargetNumber();
+            DjGameManager.Instance.ResetTimer();
+            DjGameManager.Instance.ResumeTimer();
         }
 
         isGamePaused = false;
@@ -306,7 +311,7 @@ public class UIManager : MonoBehaviour
 
     private GameObject GetGamePanelForOperationAndDifficulty(string operation, string difficulty)
     {
-        // This method returns null and is never used - consider removing it or implementing it properly
+      
         return null;
     }
 
@@ -332,28 +337,28 @@ public class UIManager : MonoBehaviour
 
         if (isGamePaused)
         {
-            // Pause the music when entering pause menu
-            if (AudioManager.Instance != null)
+         
+            if (DjAudioManager.Instance != null)
             {
-                AudioManager.Instance.PauseMusic();
+                DjAudioManager.Instance.PauseMusic();
             }
 
-            if (GameManager.Instance != null)
+            if (DjGameManager.Instance != null)
             {
-                GameManager.Instance.PauseTimer();
+                DjGameManager.Instance.PauseTimer();
             }
         }
         else
         {
-            // Resume the music when exiting pause menu
-            if (AudioManager.Instance != null)
+            
+            if (DjAudioManager.Instance != null)
             {
-                AudioManager.Instance.ResumeMusic();
+                DjAudioManager.Instance.ResumeMusic();
             }
 
-            if (GameManager.Instance != null)
+            if (DjGameManager.Instance != null)
             {
-                GameManager.Instance.ResumeTimer();
+                DjGameManager.Instance.ResumeTimer();
             }
         }
     }
@@ -364,7 +369,7 @@ public class UIManager : MonoBehaviour
         {
             feedbackPanel.SetActive(true);
 
-            // Cache these transforms to improve performance
+           
             Transform correctImage = feedbackPanel.transform.Find("correct");
             Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
 
@@ -373,10 +378,10 @@ public class UIManager : MonoBehaviour
                 correctImage.gameObject.SetActive(true);
                 incorrectImage.gameObject.SetActive(false);
 
-                if (AudioManager.Instance != null)
+                if (DjAudioManager.Instance != null)
                 {
-                    AudioManager.Instance.PlaySound("Correct");
-                    AudioManager.Instance.PlaySound("Cheer", pitch: Random.Range(0.95f, 1.05f));
+                    DjAudioManager.Instance.PlaySound("Correct");
+                    DjAudioManager.Instance.PlaySound("Cheer", pitch: Random.Range(0.95f, 1.05f));
                 }
             }
             else
@@ -384,10 +389,10 @@ public class UIManager : MonoBehaviour
                 correctImage.gameObject.SetActive(false);
                 incorrectImage.gameObject.SetActive(true);
 
-                if (AudioManager.Instance != null)
+                if (DjAudioManager.Instance != null)
                 {
-                    AudioManager.Instance.PlaySound("Incorrect");
-                    AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
+                    DjAudioManager.Instance.PlaySound("Incorrect");
+                    DjAudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
                 }
             }
 
@@ -402,19 +407,20 @@ public class UIManager : MonoBehaviour
             HideAllPanels();
             ToggleHUD(false);
             gameOverPanel.SetActive(true);
+            isInGameplay = false; 
 
-            // Find and update score texts in the game over panel
+          
             TMPro.TextMeshProUGUI finalScoreText = gameOverPanel.transform.Find("final_score")?.GetComponent<TMPro.TextMeshProUGUI>();
             TMPro.TextMeshProUGUI highScoreText = gameOverPanel.transform.Find("high_score")?.GetComponent<TMPro.TextMeshProUGUI>();
 
             if (finalScoreText != null)
                 finalScoreText.text = "Score: " + finalScore;
 
-            if (highScoreText != null && GameManager.Instance != null)
+            if (highScoreText != null && DjGameManager.Instance != null)
             {
-                // Include operation and difficulty in high score text
-                string operationName = GameManager.Instance.currentOperation.ToString();
-                string difficultyName = GameManager.Instance.currentDifficulty.ToString();
+                
+                string operationName = DjGameManager.Instance.currentOperation.ToString();
+                string difficultyName = DjGameManager.Instance.currentDifficulty.ToString();
                 highScoreText.text = $"High Score ({operationName} {difficultyName}): {highScore}";
             }
 
@@ -443,7 +449,7 @@ public class UIManager : MonoBehaviour
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
     }
 
-    // Button click handlers
+   
     public void OnStartButtonClicked()
     {
         ShowOperationMenu();
@@ -461,12 +467,12 @@ public class UIManager : MonoBehaviour
 
     public void OnCheckAnswerButtonClicked()
     {
-        if (GameManager.Instance != null)
+        if (DjGameManager.Instance != null)
         {
-            // Check the answer
-            bool wasCorrect = GameManager.Instance.CheckAnswer();
+            
+            bool wasCorrect = DjGameManager.Instance.CheckAnswer();
 
-            // Show feedback
+           
             ShowFeedback(wasCorrect);
         }
     }
@@ -497,15 +503,15 @@ public class UIManager : MonoBehaviour
 
     public void OnExitToMainMenu()
     {
-        if (GameManager.Instance != null)
+        if (DjGameManager.Instance != null)
         {
-            GameManager.Instance.PauseTimer();
+            DjGameManager.Instance.PauseTimer();
         }
 
-        // Stop the current gameplay music and switch to menu music
-        if (AudioManager.Instance != null)
+        
+        if (DjAudioManager.Instance != null)
         {
-            AudioManager.Instance.StopMusic();
+            DjAudioManager.Instance.StopMusic();
         }
 
         ShowMainMenu();
@@ -513,7 +519,7 @@ public class UIManager : MonoBehaviour
 
     public void OnRestartButtonClicked()
     {
-        // Make sure we unpause the game first
+        
         if (pausePanel.activeSelf)
         {
             pausePanel.SetActive(false);
@@ -521,19 +527,19 @@ public class UIManager : MonoBehaviour
             isGamePaused = false;
         }
 
-        // Check if operation and difficulty are set, if not use defaults
+     
         if (string.IsNullOrEmpty(currentOperationStr))
             currentOperationStr = "addition";
         if (string.IsNullOrEmpty(currentDifficultyStr))
             currentDifficultyStr = "easy";
 
-        // Show loading screen before restarting
+        
         ShowLoadingScreen();
     }
 
     public void ToggleHUD(bool show)
     {
-        // Fix the obsolete FindObjectOfType call
+       
         Canvas mainCanvas = FindAnyObjectByType<Canvas>();
         if (mainCanvas != null)
         {
@@ -550,20 +556,40 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    // Audio Controls Methods
+    
     public void OnMusicButtonClicked()
     {
-        if (AudioManager.Instance != null)
+        if (DjAudioManager.Instance != null)
         {
-            AudioManager.Instance.EnableMusic();
+            DjAudioManager.Instance.EnableMusic();
+           
+            DjAudioManager.Instance.PlayMenuMusic();
+        }
+    }
+
+    
+    public void OnPauseMusicButtonClicked()
+    {
+        if (DjAudioManager.Instance != null)
+        {
+            DjAudioManager.Instance.EnableMusic();
+         
+            if (isInGameplay)
+            {
+                DjAudioManager.Instance.PlayGameplayMusic();
+            }
+            else
+            {
+                DjAudioManager.Instance.PlayMenuMusic();
+            }
         }
     }
 
     public void OnMuteButtonClicked()
     {
-        if (AudioManager.Instance != null)
+        if (DjAudioManager.Instance != null)
         {
-            AudioManager.Instance.DisableMusic();
+            DjAudioManager.Instance.DisableMusic();
         }
     }
 }

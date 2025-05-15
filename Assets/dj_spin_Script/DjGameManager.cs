@@ -4,9 +4,9 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
 
-public class GameManager : MonoBehaviour
+public class DjGameManager : MonoBehaviour
 {
-    public static GameManager Instance;
+    public static DjGameManager Instance;
 
     public TextMeshProUGUI targetNumberText;
     public TextMeshProUGUI scoreText;
@@ -38,26 +38,26 @@ public class GameManager : MonoBehaviour
     public Sprite divideSprite;
 
     public TextMeshProUGUI timerText;
-    public float gameTime = 60f; // 60 seconds by default
+    public float gameTime = 60f; 
     private float currentTime;
     public bool timerActive = false;
 
     private Dictionary<string, Sprite> operatorSprites;
 
-    // Dictionary for disk number arrays
+   
     private Dictionary<string, int[][]> diskNumbersMap;
 
-    // Target number history to prevent immediate repetition
+   
     private List<int> recentTargetNumbers = new List<int>();
     private const int MAX_RECENT_TARGETS = 5;
 
-    // In GameManager.Awake() after setting Instance
+    
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);  // Add this line
+            DontDestroyOnLoad(gameObject);  
         }
         else
         {
@@ -65,7 +65,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Find UI references in the shared HUD more reliably
+       
         Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
         foreach (Canvas canvas in canvases)
         {
@@ -99,7 +99,7 @@ public class GameManager : MonoBehaviour
         currentStreak = 0;
         UpdateScoreUI();
 
-        // Initialize sprite dictionary
+       
         operatorSprites = new Dictionary<string, Sprite>()
         {
             { "+", plusSprite },
@@ -108,10 +108,10 @@ public class GameManager : MonoBehaviour
             { "/", divideSprite }
         };
 
-        // Initial game setup
+      
         GenerateTargetNumber();
 
-        // Initialize the timer
+       
         InitializeTimer();
     }
 
@@ -510,8 +510,8 @@ public class GameManager : MonoBehaviour
                 Debug.Log($"Streak: {currentStreak}! Bonus points: +{streakBonus}");
             }
 
-            AudioManager.Instance.PlaySound("Correct");
-            AudioManager.Instance.PlaySound("Correct", pitch: Random.Range(0.95f, 1.05f) + (streakBonus * 0.02f));
+            DjAudioManager.Instance.PlaySound("Correct");
+            DjAudioManager.Instance.PlaySound("Correct", pitch: Random.Range(0.95f, 1.05f) + (streakBonus * 0.02f));
 
             GenerateTargetNumber();
         }
@@ -519,9 +519,9 @@ public class GameManager : MonoBehaviour
         {
             currentStreak = 0;
 
-            AudioManager.Instance.PlaySound("Incorrect");
+            DjAudioManager.Instance.PlaySound("Incorrect");
             // Optional: Add record scratch sound
-            AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
+            DjAudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
         }
 
         return isCorrect;
@@ -600,9 +600,9 @@ public class GameManager : MonoBehaviour
             Debug.Log($"New high score for {currentOperation} {currentDifficulty}: {score}");
         }
 
-        if (UIManager.Instance != null)
+        if (DjUIManager.Instance != null)
         {
-            UIManager.Instance.ShowGameOver(score, highScore);
+            DjUIManager.Instance.ShowGameOver(score, highScore);
         }
     }
 

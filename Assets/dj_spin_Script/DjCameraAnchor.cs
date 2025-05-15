@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 
 [ExecuteInEditMode]
-public class CameraAnchor : MonoBehaviour
+public class DjCameraAnchor : MonoBehaviour
 {
     public enum AnchorType
     {
@@ -19,9 +19,9 @@ public class CameraAnchor : MonoBehaviour
     public AnchorType anchorType;
     public Vector3 anchorOffset;
 
-    IEnumerator updateAnchorRoutine; //Coroutine handle so we don't start it if it's already running
+    IEnumerator updateAnchorRoutine; 
 
-    // Use this for initialization
+  
     void Start()
     {
         updateAnchorRoutine = UpdateAnchorAsync();
@@ -91,7 +91,7 @@ public class CameraAnchor : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    // Update is called once per frame
+   
     void Update()
     {
         if (updateAnchorRoutine == null)
