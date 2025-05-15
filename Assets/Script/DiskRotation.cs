@@ -30,19 +30,17 @@ public class DiskRotation : MonoBehaviour
     private bool isPlayingSound = false;
     private float targetVolume = 0f;
     private float targetPitch = 1f;
-    private float smoothFactor = 8f; 
+    private float smoothFactor = 8f;
     private float rotationVelocity = 0f;
     private float rotationIdleTime = 0f;
-    private const float ROTATION_TIMEOUT = 0.1f; 
+    private const float ROTATION_TIMEOUT = 0.1f;
 
     public TextMeshPro[] numberTexts;
 
     private void Awake()
     {
-        
         mainCamera = Camera.main;
 
-       
         pointerPosition = new InputAction("PointerPosition", binding: "<Pointer>/position");
         pointerPress = new InputAction("PointerPress", binding: "<Pointer>/press");
 
@@ -53,11 +51,9 @@ public class DiskRotation : MonoBehaviour
 
     private void OnEnable()
     {
-       
         pointerPosition.Enable();
         pointerPress.Enable();
 
-       
         EnhancedTouchSupport.Enable();
         Touch.onFingerDown += OnFingerDown;
         Touch.onFingerMove += OnFingerMove;
@@ -66,11 +62,9 @@ public class DiskRotation : MonoBehaviour
 
     private void OnDisable()
     {
-     
         pointerPosition.Disable();
         pointerPress.Disable();
 
-        
         Touch.onFingerDown -= OnFingerDown;
         Touch.onFingerMove -= OnFingerMove;
         Touch.onFingerUp -= OnFingerUp;
@@ -100,10 +94,8 @@ public class DiskRotation : MonoBehaviour
 
     void SetupAudioSource()
     {
-       
         rotationAudioSource = gameObject.AddComponent<AudioSource>();
 
-     
         if (audioManager != null)
         {
             AudioManager.Sound sound = audioManager.sounds.Find(s => s.name == rotationSoundName);
@@ -124,7 +116,6 @@ public class DiskRotation : MonoBehaviour
 
     void Update()
     {
-       
         if (Touchscreen.current == null || !EnhancedTouchSupport.enabled)
         {
             HandlePointerInput();
@@ -167,14 +158,13 @@ public class DiskRotation : MonoBehaviour
         {
             isDragging = false;
             SelectCurrentNumber();
-            targetVolume = 0f; 
+            targetVolume = 0f;
         }
     }
 
     // Enhanced Touch handlers for mobile
     private void OnFingerDown(Finger finger)
     {
-        
         if (finger.index != 0) return;
 
         Vector2 touchWorldPos = mainCamera.ScreenToWorldPoint(finger.screenPosition);
@@ -188,7 +178,6 @@ public class DiskRotation : MonoBehaviour
 
     private void OnFingerMove(Finger finger)
     {
-      
         if (finger.index != 0 || !isDragging) return;
 
         Vector2 touchWorldPos = mainCamera.ScreenToWorldPoint(finger.screenPosition);
@@ -198,12 +187,11 @@ public class DiskRotation : MonoBehaviour
 
     private void OnFingerUp(Finger finger)
     {
-       
         if (finger.index != 0 || !isDragging) return;
 
         isDragging = false;
         SelectCurrentNumber();
-        targetVolume = 0f; 
+        targetVolume = 0f;
     }
 
     void UpdateRotationSound()
@@ -248,7 +236,8 @@ public class DiskRotation : MonoBehaviour
 
             if (gameManager == null)
             {
-                gameManager = FindObjectOfType<GameManager>();
+                // Fixed the deprecated method
+                gameManager = Object.FindAnyObjectByType<GameManager>();
 
                 if (gameManager == null)
                 {
@@ -268,6 +257,7 @@ public class DiskRotation : MonoBehaviour
             Debug.LogError($"Failed to update disk numbers: {e.Message}");
         }
     }
+
     private void UpdateNumberDisplay()
     {
         if (numberTexts == null || numberTexts.Length < 6)
@@ -288,7 +278,6 @@ public class DiskRotation : MonoBehaviour
             }
         }
     }
-
 
     bool IsTouchOnThisDisk(Vector2 inputPos)
     {
@@ -330,7 +319,7 @@ public class DiskRotation : MonoBehaviour
                 targetVolume = Mathf.Lerp(minVolume, maxVolume, speedFactor);
                 targetPitch = Mathf.Lerp(1.0f, maxPitch, speedFactor);
             }
-            else 
+            else
             {
                 targetVolume = Mathf.Lerp(minVolume, minVolume + (maxVolume - minVolume) * 0.5f, speedFactor);
                 targetPitch = Mathf.Lerp(1.0f, minPitch, speedFactor);
@@ -351,7 +340,6 @@ public class DiskRotation : MonoBehaviour
         else
             gameManager.UpdateRightNumber(numbers[selectedIndex]);
     }
-
 
     public void RefreshDisk()
     {

@@ -306,6 +306,7 @@ public class UIManager : MonoBehaviour
 
     private GameObject GetGamePanelForOperationAndDifficulty(string operation, string difficulty)
     {
+        // This method returns null and is never used - consider removing it or implementing it properly
         return null;
     }
 
@@ -363,23 +364,31 @@ public class UIManager : MonoBehaviour
         {
             feedbackPanel.SetActive(true);
 
+            // Cache these transforms to improve performance
+            Transform correctImage = feedbackPanel.transform.Find("correct");
+            Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
+
             if (isCorrect)
             {
-                Transform correctImage = feedbackPanel.transform.Find("correct");
-                Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
                 correctImage.gameObject.SetActive(true);
                 incorrectImage.gameObject.SetActive(false);
-                AudioManager.Instance.PlaySound("Correct");
-                AudioManager.Instance.PlaySound("Cheer", pitch: Random.Range(0.95f, 1.05f));
+
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySound("Correct");
+                    AudioManager.Instance.PlaySound("Cheer", pitch: Random.Range(0.95f, 1.05f));
+                }
             }
             else
             {
-                Transform correctImage = feedbackPanel.transform.Find("correct");
-                Transform incorrectImage = feedbackPanel.transform.Find("incorrect");
                 correctImage.gameObject.SetActive(false);
                 incorrectImage.gameObject.SetActive(true);
-                AudioManager.Instance.PlaySound("Incorrect");
-                AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
+
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySound("Incorrect");
+                    AudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
+                }
             }
 
             Invoke("HideFeedback", 1.0f);
@@ -401,7 +410,7 @@ public class UIManager : MonoBehaviour
             if (finalScoreText != null)
                 finalScoreText.text = "Score: " + finalScore;
 
-            if (highScoreText != null)
+            if (highScoreText != null && GameManager.Instance != null)
             {
                 // Include operation and difficulty in high score text
                 string operationName = GameManager.Instance.currentOperation.ToString();
@@ -524,7 +533,8 @@ public class UIManager : MonoBehaviour
 
     public void ToggleHUD(bool show)
     {
-        Canvas mainCanvas = FindObjectOfType<Canvas>();
+        // Fix the obsolete FindObjectOfType call
+        Canvas mainCanvas = FindAnyObjectByType<Canvas>();
         if (mainCanvas != null)
         {
             Transform hudTransform = mainCanvas.transform.Find("HUD");

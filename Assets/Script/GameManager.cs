@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour
         }
 
         // Find UI references in the shared HUD more reliably
-        Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
         foreach (Canvas canvas in canvases)
         {
             Transform hud = canvas.transform.Find("HUD");
@@ -540,7 +540,7 @@ public class GameManager : MonoBehaviour
     {
         if (timerText == null)
         {
-            Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+            Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
             foreach (Canvas canvas in canvases)
             {
                 Transform hud = canvas.transform.Find("HUD");
