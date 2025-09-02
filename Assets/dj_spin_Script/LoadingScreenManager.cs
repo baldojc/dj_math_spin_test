@@ -39,7 +39,7 @@ public class LoadingScreenManager : MonoBehaviour
             loadingTips = new string[]
             {
                 "Try to solve equations quickly to maximize your score!",
-                "The harder the difficulty, the higher your score multiplier!",
+                "Spin it till it's perfect!",
                 "Practice makes perfect!",
                 "Division problems require careful thinking!",
                 "Check your answer before submitting!"

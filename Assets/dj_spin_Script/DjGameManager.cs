@@ -38,26 +38,22 @@ public class DjGameManager : MonoBehaviour
     public Sprite divideSprite;
 
     public TextMeshProUGUI timerText;
-    public float gameTime = 60f; 
+    public float gameTime = 60f;
     private float currentTime;
     public bool timerActive = false;
 
     private Dictionary<string, Sprite> operatorSprites;
 
-   
     private Dictionary<string, int[][]> diskNumbersMap;
-
-   
     private List<int> recentTargetNumbers = new List<int>();
     private const int MAX_RECENT_TARGETS = 5;
 
-    
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);  
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -65,7 +61,6 @@ public class DjGameManager : MonoBehaviour
             return;
         }
 
-       
         Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
         foreach (Canvas canvas in canvases)
         {
@@ -79,13 +74,11 @@ public class DjGameManager : MonoBehaviour
                 operatorImage = hud.Find("OperatorImage")?.GetComponent<Image>();
                 timerText = hud.Find("timer")?.GetComponent<TextMeshProUGUI>();
 
-                // Add these checks to ensure references are found
                 if (targetNumberText == null) Debug.LogError("target_number not found or missing TextMeshProUGUI component");
                 if (scoreText == null) Debug.LogError("score not found or missing TextMeshProUGUI component");
                 if (selectedNumbersText == null) Debug.LogError("selected_number not found or missing TextMeshProUGUI component");
                 if (operatorImage == null) Debug.LogError("OperatorImage not found or missing Image component");
                 if (timerText == null) Debug.LogError("timer not found or missing TextMeshProUGUI component");
-
                 break;
             }
         }
@@ -95,11 +88,6 @@ public class DjGameManager : MonoBehaviour
 
     private void Start()
     {
-        score = 0;
-        currentStreak = 0;
-        UpdateScoreUI();
-
-       
         operatorSprites = new Dictionary<string, Sprite>()
         {
             { "+", plusSprite },
@@ -108,11 +96,7 @@ public class DjGameManager : MonoBehaviour
             { "/", divideSprite }
         };
 
-      
-        GenerateTargetNumber();
-
-       
-        InitializeTimer();
+   
     }
 
     private void Update()
@@ -131,20 +115,16 @@ public class DjGameManager : MonoBehaviour
 
     #region Game Flow
 
-    public void SetDifficulty(Difficulty difficulty)
+    /// <summary>
+    /// Central method to reset all state for a new game.
+    /// </summary>
+    public void ResetGameState(Difficulty difficulty, Operation operation)
     {
         currentDifficulty = difficulty;
+        currentOperation = operation;
+
         score = 0;
         currentStreak = 0;
-        UpdateScoreUI();
-        ClearRecentTargets();
-        GenerateTargetNumber();
-        ResetTimer();
-    }
-
-    public void SetOperation(Operation operation)
-    {
-        currentOperation = operation;
 
         switch (operation)
         {
@@ -155,89 +135,86 @@ public class DjGameManager : MonoBehaviour
         }
 
         UpdateOperatorImage();
+        UpdateScoreUI();
         ClearRecentTargets();
         GenerateTargetNumber();
         ResetTimer();
+    }
+
+
+    public void SetDifficulty(Difficulty difficulty)
+    {
+        ResetGameState(difficulty, currentOperation);
+    }
+
+    public void SetOperation(Operation operation)
+    {
+        ResetGameState(currentDifficulty, operation);
     }
 
     private void InitializeDiskNumbers()
     {
         diskNumbersMap = new Dictionary<string, int[][]>();
 
-        // Addition Easy (sums up to 12) 
         diskNumbersMap["addition_easy"] = new int[][]
         {
-            new int[] { 1, 2, 3, 4, 5, 6 },       // Left disk 
-            new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk 
+            new int[] { 1, 2, 3, 4, 5, 6 },
+            new int[] { 1, 2, 3, 4, 5, 6 }
         };
-
         diskNumbersMap["addition_medium"] = new int[][]
         {
-            new int[] { 5, 6, 7, 8, 9, 10 },      // Left disk 
-            new int[] { 5, 6, 7, 8, 9, 10 }       // Right disk 
+            new int[] { 5, 6, 7, 8, 9, 10 },
+            new int[] { 5, 6, 7, 8, 9, 10 }
         };
-
         diskNumbersMap["addition_hard"] = new int[][]
         {
-            new int[] { 10, 12, 14, 16, 18, 20 }, // Left disk 
-            new int[] { 5, 7, 9, 10, 11, 13 }     // Right disk 
+            new int[] { 10, 12, 14, 16, 18, 20 },
+            new int[] { 5, 7, 9, 10, 11, 13 }
         };
-
         diskNumbersMap["subtraction_easy"] = new int[][]
         {
-            new int[] { 6, 7, 8, 9, 10, 12 },     // Left disk (larger numbers) 
-            new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk (smaller numbers) 
+            new int[] { 6, 7, 8, 9, 10, 12 },
+            new int[] { 1, 2, 3, 4, 5, 6 }
         };
-
         diskNumbersMap["subtraction_medium"] = new int[][]
         {
-            new int[] { 10, 12, 14, 16, 18, 20 }, // Left disk 
-            new int[] { 2, 4, 6, 8, 10, 12 }      // Right disk 
+            new int[] { 10, 12, 14, 16, 18, 20 },
+            new int[] { 2, 4, 6, 8, 10, 12 }
         };
-
         diskNumbersMap["subtraction_hard"] = new int[][]
         {
-            new int[] { 15, 18, 20, 25, 30, 35 }, // Left disk 
-            new int[] { 5, 8, 10, 12, 15, 18 }    // Right disk 
+            new int[] { 15, 18, 20, 25, 30, 35 },
+            new int[] { 5, 8, 10, 12, 15, 18 }
         };
-
         diskNumbersMap["multiplication_easy"] = new int[][]
         {
-            new int[] { 1, 2, 3, 4, 5, 6 },       // Left disk 
-            new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk 
+            new int[] { 1, 2, 3, 4, 5, 6 },
+            new int[] { 1, 2, 3, 4, 5, 6 }
         };
-
         diskNumbersMap["multiplication_medium"] = new int[][]
         {
-            new int[] { 2, 3, 4, 5, 6, 7 },       // Left disk 
-            new int[] { 2, 3, 4, 5, 6, 7 }        // Right disk 
+            new int[] { 2, 3, 4, 5, 6, 7 },
+            new int[] { 2, 3, 4, 5, 6, 7 }
         };
-
         diskNumbersMap["multiplication_hard"] = new int[][]
         {
-            new int[] { 5, 6, 7, 8, 9, 10 },      // Left disk 
-            new int[] { 3, 4, 5, 6, 7, 8 }        // Right disk 
+            new int[] { 5, 6, 7, 8, 9, 10 },
+            new int[] { 3, 4, 5, 6, 7, 8 }
         };
-
-
         diskNumbersMap["division_easy"] = new int[][]
         {
-            new int[] { 2, 4, 6, 8, 10, 12 },     // Left disk (dividend) 
-            new int[] { 1, 2, 3, 4, 5, 6 }        // Right disk (divisor) 
+            new int[] { 2, 4, 6, 8, 10, 12 },
+            new int[] { 1, 2, 3, 4, 5, 6 }
         };
-
-        // Division Medium (perfect division) - Now more varied
         diskNumbersMap["division_medium"] = new int[][]
         {
-            new int[] { 10, 15, 18, 20, 24, 30 }, // Left disk 
-            new int[] { 2, 3, 3, 4, 6, 5 }        // Right disk 
+            new int[] { 10, 15, 18, 20, 24, 30 },
+            new int[] { 2, 3, 3, 4, 6, 5 }
         };
-
-        // Division Hard (perfect division) - Now more varied
         diskNumbersMap["division_hard"] = new int[][]
         {
-            new int[] { 12, 16, 20, 24, 28, 36 }, // Left disk 
-            new int[] { 2, 4, 5, 6, 7, 9 }        // Right disk 
+            new int[] { 12, 16, 20, 24, 28, 36 },
+            new int[] { 2, 4, 5, 6, 7, 9 }
         };
     }
 
@@ -260,7 +237,6 @@ public class DjGameManager : MonoBehaviour
         }
     }
 
-    // Method to find all possible results from the current disks
     private List<int> GetAllPossibleResults()
     {
         string mapKey = currentOperation.ToString().ToLower() + "_" + currentDifficulty.ToString().ToLower();
@@ -273,7 +249,6 @@ public class DjGameManager : MonoBehaviour
         int[] rightDiskNumbers = diskNumbers[1];
         List<int> possibleResults = new List<int>();
 
-        // Calculate all possible results based on operation
         foreach (int left in leftDiskNumbers)
         {
             foreach (int right in rightDiskNumbers)
@@ -316,32 +291,26 @@ public class DjGameManager : MonoBehaviour
 
     public void GenerateTargetNumber()
     {
-        // Get the appropriate disk arrays based on current operation and difficulty
         string mapKey = currentOperation.ToString().ToLower() + "_" + currentDifficulty.ToString().ToLower();
         int[][] diskNumbers;
 
-        // Check if this operation/difficulty combination exists in our map
         if (!diskNumbersMap.TryGetValue(mapKey, out diskNumbers))
         {
             Debug.LogWarning("Disk numbers not found for key: " + mapKey);
-            // Use a fallback option
             targetNumber = Random.Range(1, 20);
-            targetNumberText.text = "Target " + targetNumber;
+            if (targetNumberText != null) targetNumberText.text = "Target " + targetNumber;
             return;
         }
 
         int[] leftDiskNumbers = diskNumbers[0];
         int[] rightDiskNumbers = diskNumbers[1];
 
-        // Try to find a non-repeated target up to 10 attempts
         int attempts = 0;
         int maxAttempts = 10;
         bool foundValidTarget = false;
 
-        // Get all possible targets for the current setup
         List<int> allPossibleResults = GetAllPossibleResults();
 
-        // Remove recent targets from possibilities
         List<int> validTargets = new List<int>(allPossibleResults);
         foreach (int recent in recentTargetNumbers)
         {
@@ -357,7 +326,6 @@ public class DjGameManager : MonoBehaviour
         {
             attempts++;
 
-            // Select a random valid target
             if (validTargets.Count > 0)
             {
                 int randomIndex = Random.Range(0, validTargets.Count);
@@ -366,7 +334,6 @@ public class DjGameManager : MonoBehaviour
             }
             else
             {
-                // Fallback generation logic
                 switch (currentOperation)
                 {
                     case Operation.Addition:
@@ -389,21 +356,18 @@ public class DjGameManager : MonoBehaviour
 
                     case Operation.Division:
                         List<KeyValuePair<int, int>> validDivisionPairs = new List<KeyValuePair<int, int>>();
-
                         for (int i = 0; i < leftDiskNumbers.Length; i++)
                         {
                             for (int j = 0; j < rightDiskNumbers.Length; j++)
                             {
                                 int dividend = leftDiskNumbers[i];
                                 int divisor = rightDiskNumbers[j];
-
                                 if (divisor != 0 && dividend % divisor == 0)
                                 {
                                     validDivisionPairs.Add(new KeyValuePair<int, int>(dividend, divisor));
                                 }
                             }
                         }
-
                         if (validDivisionPairs.Count > 0)
                         {
                             int randomPair = Random.Range(0, validDivisionPairs.Count);
@@ -413,12 +377,10 @@ public class DjGameManager : MonoBehaviour
                         }
                         else
                         {
-                            // Default fallback
                             targetNumber = 2;
                         }
                         break;
                 }
-
                 if (!IsTargetRepeated(targetNumber))
                 {
                     foundValidTarget = true;
@@ -428,7 +390,7 @@ public class DjGameManager : MonoBehaviour
 
         AddToRecentTargets(targetNumber);
 
-        targetNumberText.text = "Target " + targetNumber;
+        if (targetNumberText != null) targetNumberText.text = "Target " + targetNumber;
         UpdateOperatorImage();
         UpdateSelectedNumbersUI();
 
@@ -485,7 +447,6 @@ public class DjGameManager : MonoBehaviour
             case "/":
                 if (RightSelectedNumber != 0)
                 {
-                    // For division, we only want exact integer divisions
                     if (LeftSelectedNumber % RightSelectedNumber == 0)
                     {
                         result = LeftSelectedNumber / RightSelectedNumber;
@@ -504,7 +465,6 @@ public class DjGameManager : MonoBehaviour
             score += pointsToAdd;
             UpdateScoreUI();
 
-            // Show bonus points effect
             if (streakBonus > 0)
             {
                 Debug.Log($"Streak: {currentStreak}! Bonus points: +{streakBonus}");
@@ -520,7 +480,6 @@ public class DjGameManager : MonoBehaviour
             currentStreak = 0;
 
             DjAudioManager.Instance.PlaySound("Incorrect");
-            // Optional: Add record scratch sound
             DjAudioManager.Instance.PlaySound("Scratch", pitch: 0.8f);
         }
 
@@ -529,7 +488,7 @@ public class DjGameManager : MonoBehaviour
 
     private void UpdateScoreUI()
     {
-        scoreText.text = "Score: " + score;
+        if (scoreText != null) scoreText.text = "Score: " + score;
     }
 
     #endregion
@@ -570,19 +529,17 @@ public class DjGameManager : MonoBehaviour
         currentTime = gameTime;
         UpdateTimerUI();
         timerActive = true;
-        Debug.Log("Timer reset to " + gameTime + " seconds");
+        Debug.Log("Timer reset to " + gameTime + " seconds (ACTIVE: " + timerActive + ")");
     }
-
     public void PauseTimer()
     {
         timerActive = false;
-        Debug.Log("Timer paused");
+        Debug.Log("Timer paused (ACTIVE: " + timerActive + ")");
     }
-
     public void ResumeTimer()
     {
         timerActive = true;
-        Debug.Log("Timer resumed");
+        Debug.Log("Timer resumed (ACTIVE: " + timerActive + ")");
     }
 
     private void GameOver()

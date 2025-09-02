@@ -17,22 +17,32 @@ public class DjAudioManager : MonoBehaviour
         [HideInInspector] public AudioSource source;
     }
 
-    public AudioClip menuMusic; 
-    public AudioClip gameplayMusic; 
-    [Range(0f, 1f)] public float musicVolume = 0.6f;
-    [Range(0f, 1f)] public float fxVolume = 1.0f;
+    public AudioClip menuMusic;
+    public AudioClip gameplayMusic;
+    [Range(0f, 1f)] public float musicVolume = 0.5f;
+    [Range(0f, 1f)] public float fxVolume = 0.5f;
 
     public List<Sound> sounds = new List<Sound>();
 
     private AudioSource musicSource;
     private float globalVolume = 1f;
-    private bool musicEnabled = true;
     private AudioClip currentMusicClip;
     private bool wasPlayingBeforePause = false;
 
     private MusicType currentMusicType = MusicType.Menu;
 
-   
+    [Header("UI References")]
+    public Slider musicSlider;
+    public Slider fxSlider;
+    public Button musicMuteButton;
+    public Button fxMuteButton;
+
+    private float lastMusicVolume = 0.5f;
+    private float lastFXVolume = 0.5f;
+
+    public float MusicVolume => musicVolume;
+    public float FXVolume => fxVolume;
+
     public enum MusicType
     {
         Menu,
@@ -68,35 +78,94 @@ public class DjAudioManager : MonoBehaviour
             s.source.loop = s.loop;
         }
 
-        musicEnabled = PlayerPrefs.GetInt("MusicEnabled", 1) == 1;
-        fxVolume = PlayerPrefs.GetFloat("FXVolume", 1.0f);
+        // Only use volume for mute/unmute logic.
+        musicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.5f);
+        fxVolume = PlayerPrefs.GetFloat("FXVolume", 0.5f);
         globalVolume = PlayerPrefs.GetFloat("GlobalVolume", 1f);
 
-        // Initialize music
+        lastMusicVolume = musicVolume > 0 ? musicVolume : 0.5f;
+        lastFXVolume = fxVolume > 0 ? fxVolume : 0.5f;
+
         UpdateMusicState();
+        SetupSlidersAndButtons();
     }
 
-    
-    private void UpdateMusicState()
+    private void SetupSlidersAndButtons()
     {
-        if (musicEnabled)
+        if (musicSlider != null)
         {
-            if (currentMusicClip == null)
-            {
-               
-                if (currentMusicType == MusicType.Menu)
-                    PlayMenuMusic();
-                else
-                    PlayGameplayMusic();
-            }
-            else if (!musicSource.isPlaying && wasPlayingBeforePause)
-            {
-                musicSource.Play();
-            }
+            musicSlider.value = musicVolume;
+            musicSlider.onValueChanged.AddListener(SetMusicVolumeFromSlider);
+        }
+        if (fxSlider != null)
+        {
+            fxSlider.value = fxVolume;
+            fxSlider.onValueChanged.AddListener(SetFXVolumeFromSlider);
+        }
+        if (musicMuteButton != null)
+        {
+            musicMuteButton.onClick.AddListener(ToggleMusicMuteFromButton);
+        }
+        if (fxMuteButton != null)
+        {
+            fxMuteButton.onClick.AddListener(ToggleFXMuteFromButton);
+        }
+    }
+
+    public void SetMusicVolumeFromSlider(float value)
+    {
+        SetMusicVolume(value);
+        if (musicSlider != null && musicSlider.value != value)
+            musicSlider.value = value;
+    }
+
+    public void SetFXVolumeFromSlider(float value)
+    {
+        SetFXVolume(value);
+        if (fxSlider != null && fxSlider.value != value)
+            fxSlider.value = value;
+    }
+
+    public void ToggleMusicMuteFromButton()
+    {
+        if (musicVolume > 0f)
+        {
+            MuteMusic();
+            if (musicSlider != null) musicSlider.value = 0f;
         }
         else
         {
-            StopMusic();
+            UnmuteMusic();
+            if (musicSlider != null) musicSlider.value = lastMusicVolume;
+        }
+    }
+
+    public void ToggleFXMuteFromButton()
+    {
+        if (fxVolume > 0f)
+        {
+            MuteFX();
+            if (fxSlider != null) fxSlider.value = 0f;
+        }
+        else
+        {
+            UnmuteFX();
+            if (fxSlider != null) fxSlider.value = lastFXVolume;
+        }
+    }
+
+    private void UpdateMusicState()
+    {
+        if (currentMusicClip == null)
+        {
+            if (currentMusicType == MusicType.Menu)
+                PlayMenuMusic();
+            else
+                PlayGameplayMusic();
+        }
+        else if (!musicSource.isPlaying && wasPlayingBeforePause)
+        {
+            musicSource.Play();
         }
     }
 
@@ -104,20 +173,22 @@ public class DjAudioManager : MonoBehaviour
 
     public void PlayMenuMusic()
     {
-        if (!musicEnabled) return;
-
         currentMusicType = MusicType.Menu;
 
         if (currentMusicClip != menuMusic)
         {
             currentMusicClip = menuMusic;
+            musicSource.Stop();
             musicSource.clip = menuMusic;
+            musicSource.time = 0f;
             musicSource.volume = musicVolume * globalVolume;
             musicSource.Play();
             wasPlayingBeforePause = true;
         }
-        else if (!musicSource.isPlaying)
+        else
         {
+            musicSource.Stop();
+            musicSource.time = 0f;
             musicSource.Play();
             wasPlayingBeforePause = true;
         }
@@ -125,20 +196,22 @@ public class DjAudioManager : MonoBehaviour
 
     public void PlayGameplayMusic()
     {
-        if (!musicEnabled) return;
-
         currentMusicType = MusicType.Gameplay;
 
         if (currentMusicClip != gameplayMusic)
         {
             currentMusicClip = gameplayMusic;
+            musicSource.Stop();
             musicSource.clip = gameplayMusic;
+            musicSource.time = 0f;
             musicSource.volume = musicVolume * globalVolume;
             musicSource.Play();
             wasPlayingBeforePause = true;
         }
-        else if (!musicSource.isPlaying)
+        else
         {
+            musicSource.Stop();
+            musicSource.time = 0f;
             musicSource.Play();
             wasPlayingBeforePause = true;
         }
@@ -155,7 +228,7 @@ public class DjAudioManager : MonoBehaviour
 
     public void ResumeMusic()
     {
-        if (musicEnabled && wasPlayingBeforePause)
+        if (wasPlayingBeforePause)
         {
             musicSource.UnPause();
         }
@@ -168,38 +241,27 @@ public class DjAudioManager : MonoBehaviour
         wasPlayingBeforePause = false;
     }
 
-    public void EnableMusic()
-    {
-        musicEnabled = true;
-        PlayerPrefs.SetInt("MusicEnabled", 1);
-        UpdateMusicState();
-        Debug.Log("Music enabled");
-    }
-
-    public void DisableMusic()
-    {
-        musicEnabled = false;
-        PlayerPrefs.SetInt("MusicEnabled", 0);
-        StopMusic();
-        Debug.Log("Music disabled");
-    }
-
-    public void ToggleMusic()
-    {
-        if (musicEnabled)
-            DisableMusic();
-        else
-            EnableMusic();
-    }
-
     public void SetMusicVolume(float volume)
     {
         musicVolume = Mathf.Clamp01(volume);
-
         if (musicSource != null)
         {
             musicSource.volume = musicVolume * globalVolume;
         }
+        if (musicVolume > 0f)
+            lastMusicVolume = musicVolume;
+        PlayerPrefs.SetFloat("MusicVolume", musicVolume);
+    }
+
+    public void MuteMusic()
+    {
+        lastMusicVolume = musicVolume > 0f ? musicVolume : lastMusicVolume;
+        SetMusicVolume(0f);
+    }
+
+    public void UnmuteMusic()
+    {
+        SetMusicVolume(lastMusicVolume > 0f ? lastMusicVolume : 0.5f);
     }
 
     #endregion
@@ -232,8 +294,20 @@ public class DjAudioManager : MonoBehaviour
         {
             s.source.volume = s.volume * fxVolume * globalVolume;
         }
-
+        if (fxVolume > 0f)
+            lastFXVolume = fxVolume;
         PlayerPrefs.SetFloat("FXVolume", fxVolume);
+    }
+
+    public void MuteFX()
+    {
+        lastFXVolume = fxVolume > 0f ? fxVolume : lastFXVolume;
+        SetFXVolume(0f);
+    }
+
+    public void UnmuteFX()
+    {
+        SetFXVolume(lastFXVolume > 0f ? lastFXVolume : 0.5f);
     }
 
     public void SetGlobalVolume(float volume)

@@ -216,8 +216,8 @@ public class DiskRotation : MonoBehaviour
             isPlayingSound = true;
         }
 
-        rotationAudioSource.volume = Mathf.Lerp(rotationAudioSource.volume, targetVolume, Time.deltaTime * smoothFactor);
-        rotationAudioSource.pitch = Mathf.Lerp(rotationAudioSource.pitch, targetPitch, Time.deltaTime * smoothFactor);
+        float fxVol = (audioManager != null) ? audioManager.FXVolume : 1f;
+        rotationAudioSource.volume = Mathf.Lerp(rotationAudioSource.volume, targetVolume * fxVol, Time.deltaTime * smoothFactor); rotationAudioSource.pitch = Mathf.Lerp(rotationAudioSource.pitch, targetPitch, Time.deltaTime * smoothFactor);
 
         // Stop sound if volume is very low
         if (isPlayingSound && rotationAudioSource.volume < 0.01f && targetVolume == 0f)
